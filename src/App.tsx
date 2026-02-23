@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { Toaster } from "sonner";
+import { useAuthStore } from "@/stores/authStore";
 import { DeveloperTrendsCard } from "./components/DeveloperTrendsCard";
 import { TopAppUsageCard } from "./components/TopAppUsageCard";
 import { TopLanguagesCard } from "./components/TopLanguagesCard";
@@ -53,10 +55,20 @@ export default function App() {
     setIsAuthenticated(true);
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setCurrentPage('dashboard');
-    localStorage.removeItem('isAuthenticated');
+  const handleLogout = async () => {
+    const { logout } = useAuthStore.getState();
+    
+    try {
+      // Logout from Firebase and clear auth store
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Clear local state
+      setIsAuthenticated(false);
+      setCurrentPage('dashboard');
+      localStorage.removeItem('isAuthenticated');
+    }
   };
 
   const recentChats = [
@@ -611,6 +623,13 @@ export default function App() {
         onClose={() => setIsSettingsOpen(false)}
         theme={theme}
         onThemeChange={handleThemeChange}
+      />
+
+      {/* Toast Notifications */}
+      <Toaster 
+        theme={theme}
+        position="top-right"
+        richColors
       />
     </div>
   );
