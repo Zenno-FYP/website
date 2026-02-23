@@ -44,6 +44,7 @@ const firebaseErrorMap: Record<string, string> = {
   'auth/invalid-credential': 'Invalid email or password.',
   'auth/operation-not-allowed': 'This operation is not allowed.',
   'auth/user-disabled': 'This user account has been disabled.',
+  'auth/account-exists-with-different-credential': 'This email is already linked to a different provider. Please sign in with your original provider instead.',
 };
 
 /**

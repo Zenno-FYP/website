@@ -14,13 +14,14 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   GithubAuthProvider,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 import { userService } from "@/services/userService";
 import { getFirebaseErrorMessage } from "@/services/errorHandler";
 import { toast, Toaster } from "sonner";
 import { EmailVerificationCard } from "./EmailVerificationCard";
 
-type AuthStep = "signin" | "signup" | "verify-email";
+type AuthStep = "signin" | "signup" | "verify-email" | "forgot-password";
 
 interface AuthPageProps {
   theme: 'light' | 'dark';
@@ -48,6 +49,7 @@ export function AuthPage({ theme, onLogin }: AuthPageProps) {
   });
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
   const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
 
   // Fetch user profile with backend API after email verification
   const fetchUserProfile = async (firebaseUser: typeof auth.currentUser) => {
@@ -161,7 +163,13 @@ export function AuthPage({ theme, onLogin }: AuthPageProps) {
       const userCredential = await signInWithPopup(auth, provider);
       await handleOAuthLogin(userCredential.user);
     } catch (error: any) {
-      const message = getFirebaseErrorMessage(error);
+      let message = getFirebaseErrorMessage(error);
+      
+      // Handle account-exists-with-different-credential error
+      if (error.code === 'auth/account-exists-with-different-credential') {
+        message = 'This email is already linked to GitHub. Please sign in with GitHub instead.';
+      }
+      
       setAuthError(message);
       toast.error(message);
     }
@@ -176,7 +184,13 @@ export function AuthPage({ theme, onLogin }: AuthPageProps) {
       const userCredential = await signInWithPopup(auth, provider);
       await handleOAuthLogin(userCredential.user);
     } catch (error: any) {
-      const message = getFirebaseErrorMessage(error);
+      let message = getFirebaseErrorMessage(error);
+      
+      // Handle account-exists-with-different-credential error
+      if (error.code === 'auth/account-exists-with-different-credential') {
+        message = 'This email is already linked to Google. Please sign in with Google instead.';
+      }
+      
       setAuthError(message);
       toast.error(message);
     }
@@ -293,12 +307,166 @@ export function AuthPage({ theme, onLogin }: AuthPageProps) {
     }
   };
 
+  // Handle forgot password
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!forgotPasswordEmail) {
+      setAuthError("Please enter your email address");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setAuthError(null);
+
+      await sendPasswordResetEmail(auth, forgotPasswordEmail);
+
+      toast.success("Password reset link sent!", {
+        description: `Check your email at ${forgotPasswordEmail} for the password reset link.`,
+        duration: 5000,
+      });
+
+      // Clear form and go back to signin
+      setForgotPasswordEmail("");
+      setStep("signin");
+    } catch (error: any) {
+      const message = getFirebaseErrorMessage(error);
+      setAuthError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Render different auth steps
   switch (step) {
     case "verify-email":
       return (
         <>
           <EmailVerificationCard onBackToSignIn={() => setStep("signin")} />
+          <Toaster position="top-right" richColors />
+        </>
+      );
+
+    case "forgot-password":
+      return (
+        <>
+          <div
+            className={`min-h-screen flex items-center justify-center relative overflow-hidden transition-colors duration-500 py-8 ${
+              theme === "dark"
+                ? "bg-[#0a0a0f]"
+                : "bg-gradient-to-br from-[#E8EAFF] via-[#F5F3FF] to-[#FDF4FF]"
+            }`}
+          >
+            <div className="absolute inset-0 pointer-events-none z-0">
+              {theme === "dark" && (
+                <div
+                  className="absolute inset-0 opacity-[0.02]"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)",
+                    backgroundSize: "50px 50px",
+                  }}
+                ></div>
+              )}
+            </div>
+
+            <Card
+              className={`w-full max-w-md z-10 rounded-3xl shadow-2xl backdrop-blur-2xl border transition-all p-8 ${
+                theme === "dark"
+                  ? "bg-gray-900/80 border-white/10"
+                  : "bg-white/80 border-white/60"
+              }`}
+            >
+              <div className="space-y-6">
+                {/* Header */}
+                <div className="space-y-2">
+                  <h2
+                    className={`text-2xl font-bold flex items-center gap-2 ${
+                      theme === "dark" ? "text-white" : "text-gray-900"
+                    }`}
+                  >
+                    <Mail className="w-6 h-6" />
+                    Reset Password
+                  </h2>
+                  <p
+                    className={`text-sm ${
+                      theme === "dark" ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
+                    Enter your email address and we'll send you a link to reset your password.
+                  </p>
+                </div>
+
+                {/* Error Message */}
+                {authError && (
+                  <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                    <p className="text-xs text-red-400">{authError}</p>
+                  </div>
+                )}
+
+                {/* Form */}
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <label
+                      className={`text-xs font-medium ${
+                        theme === "dark" ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <Mail
+                        className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${
+                          theme === "dark" ? "text-gray-400" : "text-gray-500"
+                        }`}
+                      />
+                      <Input
+                        type="email"
+                        placeholder="you@example.com"
+                        value={forgotPasswordEmail}
+                        onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                        className={`pl-10 py-4 rounded-xl backdrop-blur-xl transition-all ${
+                          theme === "dark"
+                            ? "border-white/10 bg-white/5 hover:bg-white/10 focus:bg-white/10 text-white placeholder:text-gray-400 focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20"
+                            : "border-gray-200/50 bg-white/40 hover:bg-white/60 focus:bg-white/60 placeholder:text-gray-500 focus:border-[#5B6FD8]/50 focus:ring-2 focus:ring-[#5B6FD8]/20"
+                        }`}
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Send Reset Link Button */}
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full py-4 rounded-xl bg-gradient-to-r from-[#5B6FD8] to-[#7C4DFF] hover:from-[#4d5fc7] hover:to-[#6b3eef] text-white font-medium shadow-lg hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? "Sending..." : "Send Reset Link"}
+                  </Button>
+                </form>
+
+                {/* Back to Sign In */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep("signin");
+                    setForgotPasswordEmail("");
+                    setAuthError(null);
+                  }}
+                  className={`w-full text-sm font-medium transition-colors ${
+                    theme === "dark"
+                      ? "text-purple-400 hover:text-purple-300"
+                      : "text-[#5B6FD8] hover:text-[#7C4DFF]"
+                  }`}
+                >
+                  ← Back to Sign In
+                </button>
+              </div>
+            </Card>
+          </div>
           <Toaster position="top-right" richColors />
         </>
       );
@@ -626,6 +794,7 @@ export function AuthPage({ theme, onLogin }: AuthPageProps) {
                   <div className="flex justify-end">
                     <button
                       type="button"
+                      onClick={() => setStep("forgot-password")}
                       className={`text-xs font-medium transition-colors ${
                         theme === "dark"
                           ? "text-purple-400 hover:text-purple-300"
