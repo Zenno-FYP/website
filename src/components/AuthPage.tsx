@@ -3,7 +3,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Card } from "./ui/card";
-import { Sparkles, Mail, Lock, User, Eye, EyeOff, X, Camera } from "lucide-react";
+import { Sparkles, Mail, Lock, User, Eye, EyeOff, X, Camera, Github } from "lucide-react";
 import { auth } from "@/lib/firebase";
 import {
   createUserWithEmailAndPassword,
@@ -11,6 +11,9 @@ import {
   sendEmailVerification,
   signOut,
   updateProfile,
+  signInWithPopup,
+  GoogleAuthProvider,
+  GithubAuthProvider,
 } from "firebase/auth";
 import { userService } from "@/services/userService";
 import { getFirebaseErrorMessage } from "@/services/errorHandler";
@@ -105,6 +108,77 @@ export function AuthPage({ theme, onLogin }: AuthPageProps) {
       });
     } catch (error: any) {
       throw error;
+    }
+  };
+
+  // Handle OAuth login (Google/GitHub) - creates or syncs user profile
+  const handleOAuthLogin = async (firebaseUser: typeof auth.currentUser) => {
+    if (!firebaseUser?.email) {
+      setAuthError("Email is required. Please ensure your provider has a public email.");
+      toast.error("Email is required. Please ensure your provider has a public email.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setAuthError(null);
+
+      // Set Firebase user in store so API can get the token
+      setFirebaseUser(firebaseUser);
+
+      // Call PUT /api/v1/user/me to create or get user profile
+      const user = await userService.syncOrCreateProfile({
+        email: firebaseUser.email,
+        name: firebaseUser.displayName || "User",
+      });
+
+      // Update user in store
+      setUser(user);
+      setAuthenticated(true);
+      setAuthError(null);
+
+      toast.success(`Welcome back, ${user.name}! 🎉`);
+
+      // Call the onLogin callback if provided
+      if (onLogin) {
+        onLogin();
+      }
+    } catch (error: any) {
+      const message = error.response?.data?.message || getFirebaseErrorMessage(error);
+      setAuthError(message);
+      toast.error(message);
+      console.error('OAuth login error:', error.response?.data || error.message);
+      setFirebaseUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Sign in with Google
+  const handleSigninWithGoogle = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithPopup(auth, provider);
+      await handleOAuthLogin(userCredential.user);
+    } catch (error: any) {
+      const message = getFirebaseErrorMessage(error);
+      setAuthError(message);
+      toast.error(message);
+    }
+  };
+
+  // Sign in with GitHub
+  const handleSigninWithGithub = async () => {
+    try {
+      const provider = new GithubAuthProvider();
+      // Request email scope - GitHub doesn't provide public email by default
+      provider.addScope('user:email');
+      const userCredential = await signInWithPopup(auth, provider);
+      await handleOAuthLogin(userCredential.user);
+    } catch (error: any) {
+      const message = getFirebaseErrorMessage(error);
+      setAuthError(message);
+      toast.error(message);
     }
   };
 
@@ -578,7 +652,7 @@ export function AuthPage({ theme, onLogin }: AuthPageProps) {
               </form>
 
               {/* Divider */}
-              <div className="relative my-4">
+              <div className="relative my-2">
                 <div
                   className={`absolute inset-0 flex items-center ${
                     theme === "dark" ? "opacity-20" : "opacity-100"
@@ -598,20 +672,42 @@ export function AuthPage({ theme, onLogin }: AuthPageProps) {
                         : "bg-white/80 text-gray-500"
                     }`}
                   >
-                    Coming Soon: OAuth Providers
+                    Or continue with
                   </span>
                 </div>
               </div>
 
-              {/* OAuth Notice */}
-              <p
-                className={`text-xs text-center ${
-                  theme === "dark" ? "text-gray-400" : "text-gray-600"
-                }`}
-              >
-                Google and GitHub authentication will be available in the next
-                update.
-              </p>
+              {/* OAuth Buttons */}
+              <div className="flex gap-3 mt-2">
+                <Button
+                  type="button"
+                  onClick={handleSigninWithGoogle}
+                  disabled={isLoading}
+                  variant="outline"
+                  className={`flex-1 py-3 rounded-xl font-medium transition-all ${
+                    theme === "dark"
+                      ? "border-white/10 hover:bg-white/5"
+                      : "border-gray-200 hover:bg-gray-50"
+                  }`}
+                >
+                  <Mail className="w-4 h-4 mr-2" />
+                  Google
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleSigninWithGithub}
+                  disabled={isLoading}
+                  variant="outline"
+                  className={`flex-1 py-3 rounded-xl font-medium transition-all ${
+                    theme === "dark"
+                      ? "border-white/10 hover:bg-white/5"
+                      : "border-gray-200 hover:bg-gray-50"
+                  }`}
+                >
+                  <Github className="w-4 h-4 mr-2" />
+                  GitHub
+                </Button>
+              </div>
             </Card>
 
             {/* Footer */}

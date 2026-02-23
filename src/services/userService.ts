@@ -59,4 +59,29 @@ export const userService = {
 
     return response.data.data;
   },
+
+  /**
+   * Sync or create user profile (for OAuth providers)
+   * Creates a new profile on first login or returns existing user data
+   * isVerified is automatically handled by the backend based on Firebase email verification status.
+   * @param data - User data (email, name, optional profilePhoto)
+   * @returns User profile (created or existing)
+   */
+  async syncOrCreateProfile(data: UpdateUserDto): Promise<User> {
+    const formData = new FormData();
+    formData.append('email', data.email);
+    formData.append('name', data.name);
+
+    if (data.profilePhoto) {
+      formData.append('profilePhoto', data.profilePhoto);
+    }
+
+    const response = await api.put<ApiResponse<User>>('/user/me', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    return response.data.data;
+  },
 };
