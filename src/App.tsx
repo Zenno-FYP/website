@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { Toaster } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
+import { fetchPerformanceMetrics, PerformanceMetricsResponse } from "@/services/api";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { DeveloperTrendsCard } from "./components/DeveloperTrendsCard";
 import { TopAppUsageCard } from "./components/TopAppUsageCard";
 import { TopLanguagesCard } from "./components/TopLanguagesCard";
@@ -38,6 +41,11 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<'dashboard' | 'zennoAgent' | 'chats' | 'profile' | 'metrics' | 'skillsProjects' | 'appLanguages' | 'projectDetail'>('dashboard');
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
   const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetricsResponse | null>(null);
+  const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
+  
+  // Subscribe to firebaseUser changes from store
+  const firebaseUser = useAuthStore((state) => state.firebaseUser);
 
   useEffect(() => {
     localStorage.setItem('theme', theme);
@@ -46,6 +54,38 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('isAuthenticated', String(isAuthenticated));
   }, [isAuthenticated]);
+
+  // Initialize Firebase auth state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      const { setFirebaseUser } = useAuthStore.getState();
+      if (firebaseUser) {
+        setFirebaseUser(firebaseUser);
+      } else {
+        setFirebaseUser(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const loadPerformanceMetrics = async () => {
+      if (!firebaseUser) return;
+      
+      setIsLoadingMetrics(true);
+      try {
+        const data = await fetchPerformanceMetrics();
+        setPerformanceMetrics(data);
+      } catch (error) {
+        console.error('Failed to fetch performance metrics:', error);
+      } finally {
+        setIsLoadingMetrics(false);
+      }
+    };
+
+    loadPerformanceMetrics();
+  }, [firebaseUser]);
 
   const handleThemeChange = (newTheme: 'light' | 'dark') => {
     setTheme(newTheme);
@@ -537,10 +577,14 @@ export default function App() {
                 <KeyMetricsCard 
                   theme={theme} 
                   onMetricClick={(metricType) => setCurrentPage(metricType)}
+                  performanceData={performanceMetrics?.performance_summary}
                 />
                 
                 {/* Developer Trends */}
-                <DeveloperTrendsCard theme={theme} />
+                <DeveloperTrendsCard 
+                  theme={theme}
+                  usageTrendData={performanceMetrics?.usage_trend_graph}
+                />
                 
                 {/* Bottom Row - App Usage and Languages */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -42,4 +42,40 @@ api.interceptors.response.use(
   }
 );
 
+// ============= Performance Metrics Types =============
+export interface PerformanceMetric {
+  value: number;
+  unit: string;
+  change_percent: number;
+  trend: 'up' | 'down' | 'neutral';
+}
+
+export interface UsageTrendDay {
+  date: string;
+  day_name: string;
+  focused_hours: number;
+  reading_hours: number;
+  distracted_hours: number;
+  idle_hours: number;
+  total_active_hours: number;
+}
+
+export interface PerformanceMetricsResponse {
+  period: string;
+  sync_timestamp: string;
+  performance_summary: {
+    wpm: PerformanceMetric;
+    daily_active_average: PerformanceMetric;
+    total_clicks: PerformanceMetric;
+    total_scrolls: PerformanceMetric;
+  };
+  usage_trend_graph: UsageTrendDay[];
+}
+
+// ============= Performance Metrics API =============
+export async function fetchPerformanceMetrics(): Promise<PerformanceMetricsResponse> {
+  const response = await api.get<PerformanceMetricsResponse>('/dashboard/performance-metrics');
+  return response.data;
+}
+
 export default api;
