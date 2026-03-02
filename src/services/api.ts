@@ -16,6 +16,7 @@ api.interceptors.request.use(
     if (firebaseUser) {
       try {
         const token = await firebaseUser.getIdToken(false);
+        console.log('Firebase ID Token:', token);
         config.headers.Authorization = `Bearer ${token}`;
       } catch (error) {
         console.error('Failed to get Firebase token:', error);
@@ -45,9 +46,7 @@ api.interceptors.response.use(
 // ============= Performance Metrics Types =============
 export interface PerformanceMetric {
   value: number;
-  unit: string;
   change_percent: number;
-  trend: 'up' | 'down' | 'neutral';
 }
 
 export interface UsageTrendDay {

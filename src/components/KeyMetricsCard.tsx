@@ -56,9 +56,17 @@ export function KeyMetricsCard({ theme, onMetricClick, performanceData }: KeyMet
         const metric = getMetricValue(config.key);
         
         const value = metric?.value ?? 0;
-        const unit = metric?.unit || "";
         const change = metric?.change_percent ?? 0;
-        const trend = metric?.trend ?? "neutral";
+        
+        // Determine trend based on change_percent
+        let trend: 'up' | 'down' | 'neutral';
+        if (change > 0) {
+          trend = 'up';
+        } else if (change < 0) {
+          trend = 'down';
+        } else {
+          trend = 'neutral';
+        }
         
         return (
           <Card 
