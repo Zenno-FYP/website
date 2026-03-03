@@ -1,232 +1,89 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Code, Chrome, Terminal, MessageSquare, Figma, TrendingUp, ArrowRight } from "lucide-react";
-
-type TimePeriod = "24hours" | "week" | "month" | "year";
-
-// Data for 24 hours
-const apps24Hours = [
-  { 
-    name: "VS Code", 
-    hours: 6.5, 
-    percentage: 85, 
-    trend: "+12%",
-    color: "#5B6FD8",
-    icon: Code,
-    gradient: "from-[#5B6FD8] to-[#7C4DFF]"
-  },
-  { 
-    name: "Chrome", 
-    hours: 4.2, 
-    percentage: 68, 
-    trend: "+8%",
-    color: "#4ECDC4",
-    icon: Chrome,
-    gradient: "from-[#4ECDC4] to-[#44A6A0]"
-  },
-  { 
-    name: "Terminal", 
-    hours: 3.8, 
-    percentage: 62, 
-    trend: "+15%",
-    color: "#FF6B9D",
-    icon: Terminal,
-    gradient: "from-[#FF6B9D] to-[#FF8FA3]"
-  },
-  { 
-    name: "Slack", 
-    hours: 2.1, 
-    percentage: 45, 
-    trend: "-3%",
-    color: "#FFD93D",
-    icon: MessageSquare,
-    gradient: "from-[#FFD93D] to-[#FFC93D]"
-  },
-  { 
-    name: "Figma", 
-    hours: 1.5, 
-    percentage: 30, 
-    trend: "+5%",
-    color: "#9B59B6",
-    icon: Figma,
-    gradient: "from-[#9B59B6] to-[#8E44AD]"
-  },
-];
-
-// Data for week
-const appsWeek = [
-  { 
-    name: "VS Code", 
-    hours: 42, 
-    percentage: 82, 
-    trend: "+10%",
-    color: "#5B6FD8",
-    icon: Code,
-    gradient: "from-[#5B6FD8] to-[#7C4DFF]"
-  },
-  { 
-    name: "Chrome", 
-    hours: 28, 
-    percentage: 65, 
-    trend: "+6%",
-    color: "#4ECDC4",
-    icon: Chrome,
-    gradient: "from-[#4ECDC4] to-[#44A6A0]"
-  },
-  { 
-    name: "Terminal", 
-    hours: 24, 
-    percentage: 58, 
-    trend: "+12%",
-    color: "#FF6B9D",
-    icon: Terminal,
-    gradient: "from-[#FF6B9D] to-[#FF8FA3]"
-  },
-  { 
-    name: "Slack", 
-    hours: 14, 
-    percentage: 40, 
-    trend: "-2%",
-    color: "#FFD93D",
-    icon: MessageSquare,
-    gradient: "from-[#FFD93D] to-[#FFC93D]"
-  },
-  { 
-    name: "Figma", 
-    hours: 10, 
-    percentage: 28, 
-    trend: "+4%",
-    color: "#9B59B6",
-    icon: Figma,
-    gradient: "from-[#9B59B6] to-[#8E44AD]"
-  },
-];
-
-// Data for month
-const appsMonth = [
-  { 
-    name: "VS Code", 
-    hours: 168, 
-    percentage: 80, 
-    trend: "+8%",
-    color: "#5B6FD8",
-    icon: Code,
-    gradient: "from-[#5B6FD8] to-[#7C4DFF]"
-  },
-  { 
-    name: "Chrome", 
-    hours: 115, 
-    percentage: 62, 
-    trend: "+5%",
-    color: "#4ECDC4",
-    icon: Chrome,
-    gradient: "from-[#4ECDC4] to-[#44A6A0]"
-  },
-  { 
-    name: "Terminal", 
-    hours: 98, 
-    percentage: 55, 
-    trend: "+10%",
-    color: "#FF6B9D",
-    icon: Terminal,
-    gradient: "from-[#FF6B9D] to-[#FF8FA3]"
-  },
-  { 
-    name: "Slack", 
-    hours: 56, 
-    percentage: 38, 
-    trend: "-1%",
-    color: "#FFD93D",
-    icon: MessageSquare,
-    gradient: "from-[#FFD93D] to-[#FFC93D]"
-  },
-  { 
-    name: "Figma", 
-    hours: 42, 
-    percentage: 25, 
-    trend: "+3%",
-    color: "#9B59B6",
-    icon: Figma,
-    gradient: "from-[#9B59B6] to-[#8E44AD]"
-  },
-];
-
-// Data for year
-const appsYear = [
-  { 
-    name: "VS Code", 
-    hours: 2016, 
-    percentage: 78, 
-    trend: "+15%",
-    color: "#5B6FD8",
-    icon: Code,
-    gradient: "from-[#5B6FD8] to-[#7C4DFF]"
-  },
-  { 
-    name: "Chrome", 
-    hours: 1380, 
-    percentage: 60, 
-    trend: "+10%",
-    color: "#4ECDC4",
-    icon: Chrome,
-    gradient: "from-[#4ECDC4] to-[#44A6A0]"
-  },
-  { 
-    name: "Terminal", 
-    hours: 1176, 
-    percentage: 52, 
-    trend: "+18%",
-    color: "#FF6B9D",
-    icon: Terminal,
-    gradient: "from-[#FF6B9D] to-[#FF8FA3]"
-  },
-  { 
-    name: "Slack", 
-    hours: 672, 
-    percentage: 35, 
-    trend: "+2%",
-    color: "#FFD93D",
-    icon: MessageSquare,
-    gradient: "from-[#FFD93D] to-[#FFC93D]"
-  },
-  { 
-    name: "Figma", 
-    hours: 504, 
-    percentage: 22, 
-    trend: "+7%",
-    color: "#9B59B6",
-    icon: Figma,
-    gradient: "from-[#9B59B6] to-[#8E44AD]"
-  },
-];
+import { Code, Chrome, Terminal, MessageSquare, Figma, TrendingUp, ArrowRight, Loader2 } from "lucide-react";
+import { fetchToolUsage, TopApp } from "@/services/api";
+import { useFirebaseUser } from "@/stores/useAuthHooks";
 
 interface TopAppUsageCardProps {
   theme: 'light' | 'dark';
   onViewClick?: () => void;
 }
 
-export function TopAppUsageCard({ theme, onViewClick }: TopAppUsageCardProps) {
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>("24hours");
-  
-  const getAppsData = () => {
-    switch (timePeriod) {
-      case "24hours":
-        return apps24Hours;
-      case "week":
-        return appsWeek;
-      case "month":
-        return appsMonth;
-      case "year":
-        return appsYear;
-      default:
-        return apps24Hours;
-    }
+// Map app names to icons for better display
+const getAppIcon = (appName: string) => {
+  const name = appName.toLowerCase();
+  if (name.includes('code') || name.includes('vscode') || name.includes('vs')) return Code;
+  if (name.includes('chrome') || name.includes('brave') || name.includes('firefox')) return Chrome;
+  if (name.includes('terminal') || name.includes('cmd') || name.includes('powershell')) return Terminal;
+  if (name.includes('slack') || name.includes('whatsapp') || name.includes('message')) return MessageSquare;
+  if (name.includes('figma')) return Figma;
+  return Code;
+};
+
+// Color palette for apps
+const getAppColor = (appName: string): { color: string; gradient: string } => {
+  const colors: Record<string, { color: string; gradient: string }> = {
+    'VS Code': { color: "#5B6FD8", gradient: "from-[#5B6FD8] to-[#7C4DFF]" },
+    'Chrome': { color: "#4ECDC4", gradient: "from-[#4ECDC4] to-[#44A6A0]" },
+    'Brave': { color: "#FB542B", gradient: "from-[#FB542B] to-[#FF8C42]" },
+    'Terminal': { color: "#FF6B9D", gradient: "from-[#FF6B9D] to-[#FF8FA3]" },
+    'Slack': { color: "#FFD93D", gradient: "from-[#FFD93D] to-[#FFC93D]" },
+    'Figma': { color: "#9B59B6", gradient: "from-[#9B59B6] to-[#8E44AD]" },
+    'Whatsapp': { color: "#25D366", gradient: "from-[#25D366] to-[#20BA58]" },
+    'Explorer': { color: "#0078D4", gradient: "from-[#0078D4] to-[#0063B1]" },
+    'Mongodbcompass': { color: "#00ED64", gradient: "from-[#00ED64] to-[#00D149]" },
   };
   
-  const apps = getAppsData();
-  const totalHours = apps.reduce((sum, app) => sum + app.hours, 0);
+  return colors[appName] || { color: "#5B6FD8", gradient: "from-[#5B6FD8] to-[#7C4DFF]" };
+};
+
+export function TopAppUsageCard({ theme, onViewClick }: TopAppUsageCardProps) {
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [apps, setApps] = useState<TopApp[]>([]);
+  const [totalHours, setTotalHours] = useState<number>(0);
+  const [usageIncrease, setUsageIncrease] = useState<number>(0);
+  
+  // Subscribe to firebaseUser from store
+  const firebaseUser = useFirebaseUser();
+
+  useEffect(() => {
+    const loadToolUsage = async () => {
+      try {
+        // Only load if user exists
+        if (!firebaseUser || !firebaseUser.email) {
+          setIsLoading(false);
+          setError(null);
+          return;
+        }
+        
+        setIsLoading(true);
+        setError(null);
+        
+        // Get fresh token to ensure session is valid
+        await firebaseUser.getIdToken(true);
+        console.log('Loading tool usage for user:', firebaseUser.email);
+        
+        const data = await fetchToolUsage();
+        setApps(data.top_apps.apps);
+        setTotalHours(data.top_apps.total_usage_hours);
+        setUsageIncrease(data.top_apps.usage_increase_from_yesterday_percent);
+      } catch (err) {
+        console.error('Failed to fetch tool usage:', err);
+        const errMsg = err instanceof Error ? err.message : 'Failed to load app usage data';
+        if (errMsg.includes('401') || errMsg.includes('Unauthorized')) {
+          setError('Authentication failed. Please log in again');
+        } else {
+          setError(errMsg);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadToolUsage();
+  }, [firebaseUser?.uid]);
   
   return (
     <Card className={`p-6 rounded-3xl shadow-lg hover:shadow-xl backdrop-blur-2xl transition-all cursor-pointer overflow-hidden relative ${
@@ -252,7 +109,6 @@ export function TopAppUsageCard({ theme, onViewClick }: TopAppUsageCardProps) {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className={`mb-1.5 font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>App Usage</h3>
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Total: {totalHours.toFixed(1)} hours</p>
               </div>
               <Button
                 onClick={onViewClick}
@@ -271,81 +127,83 @@ export function TopAppUsageCard({ theme, onViewClick }: TopAppUsageCardProps) {
             </div>
           </div>
         </div>
-        <div className="mb-4">
-          <Select value={timePeriod} onValueChange={(value) => setTimePeriod(value as TimePeriod)}>
-            <SelectTrigger className={`w-[140px] rounded-xl text-sm shadow-sm ${
-              theme === 'dark'
-                ? 'border-gray-700 bg-gray-800/50 text-white hover:bg-gray-800'
-                : 'border-gray-200 bg-white text-gray-900'
-            }`}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className={`rounded-xl backdrop-blur-2xl border shadow-2xl ${
-              theme === 'dark'
-                ? 'bg-gray-900/95 border-white/10'
-                : 'bg-white/95 border-gray-200/50'
-            }`}>
-              <SelectItem value="24hours" className={theme === 'dark' ? 'text-gray-200' : 'text-gray-900'}>Last 24 Hours</SelectItem>
-              <SelectItem value="week" className={theme === 'dark' ? 'text-gray-200' : 'text-gray-900'}>This Week</SelectItem>
-              <SelectItem value="month" className={theme === 'dark' ? 'text-gray-200' : 'text-gray-900'}>This Month</SelectItem>
-              <SelectItem value="year" className={theme === 'dark' ? 'text-gray-200' : 'text-gray-900'}>This Year</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
 
-        <div className="space-y-3">
-          {apps.map((app, index) => (
-            <div 
-              key={index} 
-              className={`group p-4 rounded-2xl backdrop-blur-xl transition-all duration-300 hover:shadow-md border shadow-sm ${
-                theme === 'dark'
-                  ? 'border-white/5 hover:bg-white/10 hover:border-white/20 shadow-black/10'
-                  : 'border-gray-100/50 hover:bg-white/60 hover:border-white/80 shadow-gray-200/50'
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${app.gradient} flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform`}>
-                  <app.icon className="w-6 h-6 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-2.5">
-                    <div className="flex items-center gap-2.5">
-                      <p className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{app.name}</p>
-                      <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${app.trend.startsWith('+') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                        {app.trend}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{app.hours}h</p>
-                      <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>{app.percentage}%</p>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className={`w-6 h-6 animate-spin ${theme === 'dark' ? 'text-white/50' : 'text-gray-400'}`} />
+          </div>
+        ) : error ? (
+          <div className={`text-center py-8 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+            <p>{error}</p>
+          </div>
+        ) : (
+          <>
+            <div className="mb-4">
+              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Last 7 Days: {totalHours.toFixed(2)} hours</p>
+            </div>
+
+            <div className="space-y-3">
+              {apps.map((app, index) => {
+                const Icon = getAppIcon(app.name);
+                const { color, gradient } = getAppColor(app.name);
+                const trendColor = app.change_percent >= 0 ? 'text-green-600' : 'text-red-600';
+                const trendBgColor = app.change_percent >= 0 ? 'bg-green-100' : 'bg-red-100';
+                
+                return (
+                  <div 
+                    key={index} 
+                    className={`group p-4 rounded-2xl backdrop-blur-xl transition-all duration-300 hover:shadow-md border shadow-sm ${
+                      theme === 'dark'
+                        ? 'border-white/5 hover:bg-white/10 hover:border-white/20 shadow-black/10'
+                        : 'border-gray-100/50 hover:bg-white/60 hover:border-white/80 shadow-gray-200/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform`}>
+                        <Icon className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-2.5">
+                          <div className="flex items-center gap-2.5">
+                            <p className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{app.name}</p>
+                            <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${trendBgColor} ${trendColor}`}>
+                              {app.change_percent >= 0 ? '+' : ''}{app.change_percent}%
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{app.duration_hours.toFixed(2)}h</p>
+                            <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>{app.percent_of_total.toFixed(1)}%</p>
+                          </div>
+                        </div>
+                        <div className={`relative w-full h-2 rounded-full overflow-hidden ${
+                          theme === 'dark' ? 'bg-gray-700/80' : 'bg-gray-200/60'
+                        }`}>
+                          <div
+                            className="absolute top-0 left-0 h-full rounded-full transition-all duration-700"
+                            style={{ 
+                              width: `${app.percent_of_total}%`,
+                              background: `linear-gradient(to right, ${color}, ${color}dd)`
+                            }}
+                          ></div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className={`relative w-full h-2 rounded-full overflow-hidden ${
-                    theme === 'dark' ? 'bg-gray-700/80' : 'bg-gray-200/60'
-                  }`}>
-                    <div
-                      className="absolute top-0 left-0 h-full rounded-full transition-all duration-700"
-                      style={{ 
-                        width: `${app.percentage}%`,
-                        background: `linear-gradient(to right, ${app.color}, ${app.color}dd)`
-                      }}
-                    ></div>
-                  </div>
-                </div>
+                );
+              })}
+            </div>
+
+            {/* Summary Footer */}
+            <div className={`mt-5 pt-5 flex items-center justify-between ${
+              theme === 'dark' ? 'border-t border-white/10' : 'border-t border-gray-200/60'
+            }`}>
+              <div className={`flex items-center gap-2 text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                <TrendingUp className={`w-4 h-4 ${usageIncrease >= 0 ? 'text-green-500' : 'text-red-500'}`} />
+                <span>{usageIncrease >= 0 ? '+' : ''}{usageIncrease}% compared to yesterday</span>
               </div>
             </div>
-          ))}
-        </div>
-
-        {/* Summary Footer */}
-        <div className={`mt-5 pt-5 flex items-center justify-between ${
-          theme === 'dark' ? 'border-t border-white/10' : 'border-t border-gray-200/60'
-        }`}>
-          <div className={`flex items-center gap-2 text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-            <TrendingUp className="w-4 h-4 text-green-500" />
-            <span>+8% compared to yesterday</span>
-          </div>
-        </div>
+          </>
+        )}
       </div>
     </Card>
   );

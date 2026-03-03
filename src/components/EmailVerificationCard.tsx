@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuthStore } from '@/stores/authStore';
+import { useFirebaseUser, useLogout, useSetLoading } from '@/stores/useAuthHooks';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { sendEmailVerification } from 'firebase/auth';
@@ -11,7 +11,9 @@ interface EmailVerificationCardProps {
 }
 
 export const EmailVerificationCard = ({ onBackToSignIn }: EmailVerificationCardProps) => {
-  const { firebaseUser, logout, setLoading } = useAuthStore();
+  const firebaseUser = useFirebaseUser();
+  const logout = useLogout();
+  const setLoading = useSetLoading();
   const [isResending, setIsResending] = useState(false);
 
   const handleResendVerification = async () => {

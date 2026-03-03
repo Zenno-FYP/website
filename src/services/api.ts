@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosResponse } from 'axios';
 import { useAuthStore } from '@/stores/authStore';
+import { invalidateCacheOnAuthChange } from '@/utils/requestCache';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string) || 'http://localhost:3000/api/v1';
 
@@ -11,16 +12,18 @@ const api = axios.create({
 // Request interceptor - add Firebase token to all requests
 api.interceptors.request.use(
   async (config) => {
-    const { firebaseUser } = useAuthStore.getState();
+    try {
+      const { firebaseUser } = useAuthStore.getState();
 
-    if (firebaseUser) {
-      try {
-        const token = await firebaseUser.getIdToken(false);
-        console.log('Firebase ID Token:', token);
-        config.headers.Authorization = `Bearer ${token}`;
-      } catch (error) {
-        console.error('Failed to get Firebase token:', error);
+      if (!firebaseUser) {
+        console.warn('No Firebase user available for request');
+        return config;
       }
+
+      const token = await firebaseUser.getIdToken(false);
+      config.headers.Authorization = `Bearer ${token}`;
+    } catch (error) {
+      console.error('Failed to get Firebase token:', error);
     }
 
     return config;
@@ -35,7 +38,8 @@ api.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid - logout user
+      // Token expired or invalid - logout user and clear cache
+      invalidateCacheOnAuthChange();
       useAuthStore.getState().logout();
     }
 
@@ -74,6 +78,51 @@ export interface PerformanceMetricsResponse {
 // ============= Performance Metrics API =============
 export async function fetchPerformanceMetrics(): Promise<PerformanceMetricsResponse> {
   const response = await api.get<PerformanceMetricsResponse>('/dashboard/performance-metrics');
+  return response.data;
+}
+
+// ============= Tool Usage Types =============
+export interface TopApp {
+  name: string;
+  duration_hours: number;
+  percent_of_total: number;
+  change_percent: number;
+}
+
+export interface TopAppsResponse {
+  total_usage_hours: number;
+  usage_increase_from_yesterday_percent: number;
+  apps: TopApp[];
+}
+
+export interface LanguageSummary {
+  total_lines_of_code: number;
+  total_files: number;
+  total_languages_used: number;
+}
+
+export interface Language {
+  name: string;
+  percent: number;
+  loc: number;
+  files: number;
+}
+
+export interface LanguageDistribution {
+  summary: LanguageSummary;
+  languages: Language[];
+}
+
+export interface ToolUsageResponse {
+  period: string;
+  sync_timestamp: string;
+  top_apps: TopAppsResponse;
+  language_distribution: LanguageDistribution;
+}
+
+// ============= Tool Usage API =============
+export async function fetchToolUsage(): Promise<ToolUsageResponse> {
+  const response = await api.get<ToolUsageResponse>('/dashboard/tool-usage');
   return response.data;
 }
 

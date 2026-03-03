@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuthStore } from "@/stores/authStore";
+import { useSetFirebaseUser, useSetUser, useSetLoading, useSetAuthError, useSetAuthenticated, useAuthUI } from "@/stores/useAuthHooks";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Card } from "./ui/card";
@@ -29,15 +29,12 @@ interface AuthPageProps {
 }
 
 export function AuthPage({ theme, onLogin }: AuthPageProps) {
-  const {
-    setFirebaseUser,
-    setUser,
-    setLoading,
-    setAuthError,
-    setAuthenticated,
-    authError,
-    isLoading,
-  } = useAuthStore();
+  const setFirebaseUser = useSetFirebaseUser();
+  const setUser = useSetUser();
+  const setLoading = useSetLoading();
+  const setAuthError = useSetAuthError();
+  const setAuthenticated = useSetAuthenticated();
+  const { authError, isLoading } = useAuthUI();
 
   const [step, setStep] = useState<AuthStep>("signin");
   const [isSignIn, setIsSignIn] = useState(true);
