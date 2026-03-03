@@ -107,7 +107,7 @@ export function KeyMetricsCard({ theme, onMetricClick, performanceData }: KeyMet
               {/* Metric Value */}
               <div className="mb-2">
                 <div className="flex items-baseline gap-1">
-                  <p className={`text-3xl ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{typeof value === 'number' ? value.toFixed(config.key === 'wpm' ? 1 : 0) : value}</p>
+                  <p className={`text-3xl ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{typeof value === 'number' ? value.toFixed(config.key === 'wpm' ? 1 : config.key === 'daily_active_average' ? 2 : 0) : value}</p>
                   {config.key === 'daily_active_average' && (
                     <span className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>hours</span>
                   )}

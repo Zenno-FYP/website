@@ -157,7 +157,7 @@ export function DeveloperTrendsCard({ theme, usageTrendData }: DeveloperTrendsCa
                 WebkitBackdropFilter: 'blur(16px)',
                 color: theme === 'dark' ? '#F3F4F6' : '#1F2937'
               }}
-              formatter={(value) => `${(value as number).toFixed(1)}h`}
+              formatter={(value) => `${(value as number).toFixed(2)}h`}
               labelFormatter={() => ''}
             />
             <Legend />
