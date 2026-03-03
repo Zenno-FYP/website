@@ -10,6 +10,11 @@ interface TopAppUsageCardProps {
   onViewClick?: () => void;
 }
 
+// Determine icon color - always white for all app backgrounds
+const getIconColor = (appName: string): string => {
+  return 'text-white';
+};
+
 // Map app names to icons for better display
 const getAppIcon = (appName: string) => {
   const name = appName.toLowerCase();
@@ -21,21 +26,39 @@ const getAppIcon = (appName: string) => {
   return Code;
 };
 
-// Color palette for apps
-const getAppColor = (appName: string): { color: string; gradient: string } => {
-  const colors: Record<string, { color: string; gradient: string }> = {
-    'VS Code': { color: "#5B6FD8", gradient: "from-[#5B6FD8] to-[#7C4DFF]" },
-    'Chrome': { color: "#4ECDC4", gradient: "from-[#4ECDC4] to-[#44A6A0]" },
-    'Brave': { color: "#FB542B", gradient: "from-[#FB542B] to-[#FF8C42]" },
-    'Terminal': { color: "#FF6B9D", gradient: "from-[#FF6B9D] to-[#FF8FA3]" },
-    'Slack': { color: "#FFD93D", gradient: "from-[#FFD93D] to-[#FFC93D]" },
-    'Figma': { color: "#9B59B6", gradient: "from-[#9B59B6] to-[#8E44AD]" },
-    'Whatsapp': { color: "#25D366", gradient: "from-[#25D366] to-[#20BA58]" },
-    'Explorer': { color: "#0078D4", gradient: "from-[#0078D4] to-[#0063B1]" },
-    'Mongodbcompass': { color: "#00ED64", gradient: "from-[#00ED64] to-[#00D149]" },
-  };
+// Color palette for apps - cycles through all colors for any app
+const APP_COLOR_PALETTE = [
+  { color: "#5B6FD8", linearGradient: "linear-gradient(to bottom right, #5B6FD8, #7C4DFF)" },    // Purple/Blue
+  { color: "#4ECDC4", linearGradient: "linear-gradient(to bottom right, #4ECDC4, #44A6A0)" },    // Teal
+  { color: "#FB542B", linearGradient: "linear-gradient(to bottom right, #FB542B, #FF8C42)" },    // Orange
+  { color: "#FF6B9D", linearGradient: "linear-gradient(to bottom right, #FF6B9D, #FF8FA3)" },    // Pink
+  { color: "#FFD93D", linearGradient: "linear-gradient(to bottom right, #FFD93D, #FFC93D)" },    // Yellow
+  { color: "#9B59B6", linearGradient: "linear-gradient(to bottom right, #9B59B6, #8E44AD)" },    // Purple
+  { color: "#25D366", linearGradient: "linear-gradient(to bottom right, #25D366, #20BA58)" },    // Green
+  { color: "#0078D4", linearGradient: "linear-gradient(to bottom right, #0078D4, #0063B1)" },    // Blue
+  { color: "#00ED64", linearGradient: "linear-gradient(to bottom right, #00ED64, #00D149)" },    // Bright Green
+];
+
+// Hash app name to get consistent color index
+const hashAppName = (appName: string): number => {
+  let hash = 0;
+  for (let i = 0; i < appName.length; i++) {
+    hash = ((hash << 5) - hash) + appName.charCodeAt(i);
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return Math.abs(hash) % APP_COLOR_PALETTE.length;
+};
+
+// Color palette for apps - returns CSS gradient strings
+const getAppColor = (appName: string): { color: string; gradient: string; linearGradient: string } => {
+  const colorIndex = hashAppName(appName);
+  const selectedColor = APP_COLOR_PALETTE[colorIndex];
   
-  return colors[appName] || { color: "#5B6FD8", gradient: "from-[#5B6FD8] to-[#7C4DFF]" };
+  return {
+    color: selectedColor.color,
+    gradient: "", // Not used with inline styles, kept for compatibility
+    linearGradient: selectedColor.linearGradient
+  };
 };
 
 export function TopAppUsageCard({ theme, onViewClick }: TopAppUsageCardProps) {
@@ -146,6 +169,7 @@ export function TopAppUsageCard({ theme, onViewClick }: TopAppUsageCardProps) {
               {apps.map((app, index) => {
                 const Icon = getAppIcon(app.name);
                 const { color, gradient } = getAppColor(app.name);
+                const iconColor = getIconColor(app.name);
                 const trendColor = app.change_percent >= 0 ? 'text-green-600' : 'text-red-600';
                 const trendBgColor = app.change_percent >= 0 ? 'bg-green-100' : 'bg-red-100';
                 
@@ -159,8 +183,13 @@ export function TopAppUsageCard({ theme, onViewClick }: TopAppUsageCardProps) {
                     }`}
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform`}>
-                        <Icon className="w-6 h-6 text-white" />
+                      <div 
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform`}
+                        style={{
+                          background: getAppColor(app.name).linearGradient
+                        }}
+                      >
+                        <Icon className={`w-6 h-6 ${iconColor}`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-2.5">
