@@ -21,6 +21,8 @@ api.interceptors.request.use(
       }
 
       const token = await firebaseUser.getIdToken(false);
+      // Uncomment to log token on every API call - helpful for debugging specific requests
+      // console.log('🔐 API Request Token:', token.substring(0, 50) + '...');
       config.headers.Authorization = `Bearer ${token}`;
     } catch (error) {
       console.error('Failed to get Firebase token:', error);
@@ -65,7 +67,6 @@ export interface UsageTrendDay {
 
 export interface PerformanceMetricsResponse {
   period: string;
-  sync_timestamp: string;
   performance_summary: {
     wpm: PerformanceMetric;
     daily_active_average: PerformanceMetric;
@@ -115,7 +116,6 @@ export interface LanguageDistribution {
 
 export interface ToolUsageResponse {
   period: string;
-  sync_timestamp: string;
   top_apps: TopAppsResponse;
   language_distribution: LanguageDistribution;
 }
@@ -123,6 +123,28 @@ export interface ToolUsageResponse {
 // ============= Tool Usage API =============
 export async function fetchToolUsage(): Promise<ToolUsageResponse> {
   const response = await api.get<ToolUsageResponse>('/dashboard/tool-usage');
+  return response.data;
+}
+
+// ============= Project Insights Types =============
+export interface Skill {
+  name: string;
+  percent: number;
+}
+
+export interface ProjectDetail {
+  name: string;
+  last_active: string; // ISO 8601 string in local timezone (no Z)
+}
+
+export interface ProjectInsightsResponse {
+  strongest_skills: Skill[];
+  current_projects: ProjectDetail[];
+}
+
+// ============= Project Insights API =============
+export async function fetchProjectInsights(): Promise<ProjectInsightsResponse> {
+  const response = await api.get<ProjectInsightsResponse>('/dashboard/project-insights');
   return response.data;
 }
 

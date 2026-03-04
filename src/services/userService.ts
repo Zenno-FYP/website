@@ -10,11 +10,13 @@ export interface User {
   _id: string;
   email: string;
   name: string;
-  profilePhoto?: string;
+  profilePhoto?: string | null;
   isVerified: boolean;
   role: string;
+  activity_sync_at: string;
   createdAt: string;
   updatedAt: string;
+  timezone_offset: number;
 }
 
 export interface ApiResponse<T> {

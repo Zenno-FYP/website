@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Toaster } from "sonner";
 import { useFirebaseUser, useIsCheckingAuth, useLogout } from "@/stores/useAuthHooks";
 import { useAuthStore } from "@/stores/authStore";
@@ -56,10 +56,22 @@ export default function App() {
     localStorage.setItem('isAuthenticated', String(isAuthenticated));
   }, [isAuthenticated]);
 
+  // Track if we've logged the token on this session
+  const hasLoggedToken = useRef(false);
+
   // Initialize Firebase auth state on app load - this restores the user session
   useEffect(() => {
     const { initializeAuth } = useAuthStore.getState();
-    initializeAuth();
+    initializeAuth().then(async () => {
+      const user = useAuthStore.getState().firebaseUser;
+      if (user && !hasLoggedToken.current) {
+        hasLoggedToken.current = true;
+        const token = await user.getIdToken(true);
+        console.log('🔐 Dashboard Loaded - Firebase ID Token:', token);
+        console.log('📧 User Email:', user.email);
+        console.log('🕐 Token Retrieved At:', new Date().toISOString());
+      }
+    });
   }, []);
 
   useEffect(() => {
