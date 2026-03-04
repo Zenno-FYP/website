@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Toaster } from "sonner";
+import { useFirebaseUser, useIsCheckingAuth, useLogout } from "@/stores/useAuthHooks";
 import { useAuthStore } from "@/stores/authStore";
+import { fetchPerformanceMetrics, PerformanceMetricsResponse } from "@/services/api";
 import { DeveloperTrendsCard } from "./components/DeveloperTrendsCard";
 import { TopAppUsageCard } from "./components/TopAppUsageCard";
 import { TopLanguagesCard } from "./components/TopLanguagesCard";
@@ -38,6 +40,13 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<'dashboard' | 'zennoAgent' | 'chats' | 'profile' | 'metrics' | 'skillsProjects' | 'appLanguages' | 'projectDetail'>('dashboard');
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
   const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetricsResponse | null>(null);
+  const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
+  
+  // Subscribe to firebaseUser changes from store
+  const firebaseUser = useFirebaseUser();
+  const isCheckingAuth = useIsCheckingAuth();
+  const logout = useLogout();
 
   useEffect(() => {
     localStorage.setItem('theme', theme);
@@ -46,6 +55,42 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('isAuthenticated', String(isAuthenticated));
   }, [isAuthenticated]);
+
+  // Track if we've logged the token on this session
+  const hasLoggedToken = useRef(false);
+
+  // Initialize Firebase auth state on app load - this restores the user session
+  useEffect(() => {
+    const { initializeAuth } = useAuthStore.getState();
+    initializeAuth().then(async () => {
+      const user = useAuthStore.getState().firebaseUser;
+      if (user && !hasLoggedToken.current) {
+        hasLoggedToken.current = true;
+        const token = await user.getIdToken(true);
+        console.log('🔐 Dashboard Loaded - Firebase ID Token:', token);
+        console.log('📧 User Email:', user.email);
+        console.log('🕐 Token Retrieved At:', new Date().toISOString());
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    const loadPerformanceMetrics = async () => {
+      if (!firebaseUser) return;
+      
+      setIsLoadingMetrics(true);
+      try {
+        const data = await fetchPerformanceMetrics();
+        setPerformanceMetrics(data);
+      } catch (error) {
+        console.error('Failed to fetch performance metrics:', error);
+      } finally {
+        setIsLoadingMetrics(false);
+      }
+    };
+
+    loadPerformanceMetrics();
+  }, [firebaseUser]);
 
   const handleThemeChange = (newTheme: 'light' | 'dark') => {
     setTheme(newTheme);
@@ -56,8 +101,6 @@ export default function App() {
   };
 
   const handleLogout = async () => {
-    const { logout } = useAuthStore.getState();
-    
     try {
       // Logout from Firebase and clear auth store
       await logout();
@@ -537,10 +580,14 @@ export default function App() {
                 <KeyMetricsCard 
                   theme={theme} 
                   onMetricClick={(metricType) => setCurrentPage(metricType)}
+                  performanceData={performanceMetrics?.performance_summary}
                 />
                 
                 {/* Developer Trends */}
-                <DeveloperTrendsCard theme={theme} />
+                <DeveloperTrendsCard 
+                  theme={theme}
+                  usageTrendData={performanceMetrics?.usage_trend_graph}
+                />
                 
                 {/* Bottom Row - App Usage and Languages */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
