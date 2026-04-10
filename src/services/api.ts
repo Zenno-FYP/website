@@ -1,0 +1,541 @@
+import axios, { AxiosError, AxiosResponse } from 'axios';
+import { useAuthStore } from '@/stores/authStore';
+import { invalidateCacheOnAuthChange } from '@/utils/requestCache';
+
+/**
+ * Ensures requests hit `/api/v1/...` even when VITE_API_BASE_URL is set to origin only
+ * (e.g. `http://localhost:3000`), which otherwise produces 404s for `/dashboard/...`.
+ */
+function normalizeApiBaseUrl(raw: string | undefined): string {
+  const fallback = 'http://localhost:3000';
+  const base = (raw && raw.trim()) || fallback;
+  const trimmed = base.replace(/\/+$/, '');
+  if (/\/api\/v\d+$/i.test(trimmed)) {
+    return trimmed;
+  }
+  return `${trimmed}/api/v1`;
+}
+
+const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL as string | undefined);
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 10000,
+});
+
+// Request interceptor - add Firebase token to all requests
+api.interceptors.request.use(
+  async (config) => {
+    try {
+      const { firebaseUser } = useAuthStore.getState();
+
+      if (!firebaseUser) {
+        return Promise.reject(
+          new AxiosError(
+            'Not signed in yet. Wait for authentication, then retry.',
+            'ERR_NO_FIREBASE_USER',
+            config,
+          ),
+        );
+      }
+
+      const token = await firebaseUser.getIdToken();
+      // Uncomment to log token on every API call - helpful for debugging specific requests
+      // console.log('🔐 API Request Token:', token.substring(0, 50) + '...');
+      config.headers.Authorization = `Bearer ${token}`;
+    } catch (error) {
+      console.error('Failed to get Firebase token:', error);
+    }
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor - handle errors globally
+api.interceptors.response.use(
+  (response: AxiosResponse) => response,
+  (error: AxiosError) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid - logout user and clear cache
+      invalidateCacheOnAuthChange();
+      useAuthStore.getState().logout();
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+// ============= Performance Metrics Types =============
+export interface PerformanceMetric {
+  value: number;
+  change_percent: number;
+}
+
+export interface UsageTrendDay {
+  date: string;
+  day_name: string;
+  flow_hours: number;
+  debugging_hours: number;
+  research_hours: number;
+  communication_hours: number;
+  distracted_hours: number;
+}
+
+export interface PerformanceMetricsResponse {
+  period: string;
+  performance_summary: {
+    avg_typing_intensity: PerformanceMetric;    // KPM - Keystrokes Per Minute, calculated as Sum of daily KPM / active_days
+    avg_mouse_click_rate: PerformanceMetric;    // CPM - Clicks Per Minute, calculated as Sum of daily CPM / active_days
+    avg_corrections: PerformanceMetric;         // % - Correction Rate, calculated as (total_deletions / total_estimated_keystrokes) × 100
+    daily_active_average: PerformanceMetric;    // Hours - Average active hours per day, calculated as Total context duration / active_days
+  };
+  usage_trend_graph: UsageTrendDay[];
+}
+
+// ============= Performance Metrics API =============
+export async function fetchPerformanceMetrics(): Promise<PerformanceMetricsResponse> {
+  const response = await api.get<PerformanceMetricsResponse>('/dashboard/performance-metrics');
+  return response.data;
+}
+
+/** Daily behavior aggregates (matches activity.behavior + context per calendar day). */
+export interface DailyBehaviorMetrics {
+  date: string;
+  day_name: string;
+  typing_intensity_kpm: number;
+  mouse_click_rate_cpm: number;
+  correction_rate_percent: number;
+  active_hours: number;
+  idle_hours: number;
+  total_deletion_key_presses: number;
+  total_mouse_movement_distance: number;
+}
+
+export interface PerformanceMetricsDetailResponse {
+  period: string;
+  performance_summary: PerformanceMetricsResponse['performance_summary'];
+  daily_series: DailyBehaviorMetrics[];
+}
+
+export async function fetchPerformanceMetricsDetail(): Promise<PerformanceMetricsDetailResponse> {
+  const response = await api.get<PerformanceMetricsDetailResponse>(
+    '/dashboard/performance-metrics-detail',
+  );
+  return response.data;
+}
+
+// ============= Tool Usage Types =============
+export interface TopApp {
+  name: string;
+  duration_hours: number;
+  percent_of_total: number;
+  change_percent: number;
+}
+
+export interface TopAppsResponse {
+  total_usage_hours: number;
+  usage_increase_from_yesterday_percent: number;
+  apps: TopApp[];
+}
+
+export interface LanguageSummary {
+  total_lines_of_code: number;
+  total_files: number;
+  total_languages_used: number;
+}
+
+export interface Language {
+  name: string;
+  percent: number;
+  loc: number;
+  files: number;
+}
+
+export interface LanguageDistribution {
+  summary: LanguageSummary;
+  languages: Language[];
+}
+
+export interface ToolUsageResponse {
+  period: string;
+  top_apps: TopAppsResponse;
+  language_distribution: LanguageDistribution;
+}
+
+export interface DailyAppUsage {
+  date: string;
+  day_name: string;
+  total_hours: number;
+}
+
+export interface AppCategoryUsage {
+  category: string;
+  hours: number;
+  percent_of_total: number;
+}
+
+/** Apps & languages detail: expanded lists + 7-day daily app hours. */
+export interface ToolUsageDetailResponse {
+  period: string;
+  unique_apps_count: number;
+  /** Inferred from app names (server-side rules). */
+  category_breakdown: AppCategoryUsage[];
+  daily_app_usage: DailyAppUsage[];
+  top_apps: TopAppsResponse;
+  language_distribution: LanguageDistribution;
+}
+
+// ============= Tool Usage API =============
+export async function fetchToolUsage(): Promise<ToolUsageResponse> {
+  const response = await api.get<ToolUsageResponse>('/dashboard/tool-usage');
+  return response.data;
+}
+
+export async function fetchToolUsageDetail(): Promise<ToolUsageDetailResponse> {
+  const response = await api.get<ToolUsageDetailResponse>('/dashboard/tool-usage-detail');
+  return response.data;
+}
+
+// ============= Project Insights Types =============
+export interface Skill {
+  name: string;
+  percent: number;
+}
+
+export interface ProjectDetail {
+  name: string;
+  last_active: string; // ISO 8601 string in local timezone (no Z)
+}
+
+export interface ProjectInsightsResponse {
+  strongest_skills: Skill[];
+  current_projects: ProjectDetail[];
+}
+
+// ============= Project Insights API =============
+export async function fetchProjectInsights(): Promise<ProjectInsightsResponse> {
+  const response = await api.get<ProjectInsightsResponse>('/dashboard/project-insights');
+  return response.data;
+}
+
+// ============= Skills & projects detail =============
+export interface SkillsProjectsSummary {
+  total_projects: number;
+  /** Active time: sum of activity.apps across all projects (hours). */
+  total_app_time_hours: number;
+  unique_skills_count: number;
+  total_lines_of_code: number;
+}
+
+export interface SkillTimeEntry {
+  name: string;
+  duration_hours: number;
+  percent_of_total: number;
+}
+
+export interface ProjectLanguageLine {
+  name: string;
+  lines: number;
+}
+
+export interface ProjectSkillTime {
+  name: string;
+  duration_sec: number;
+  duration_hours: number;
+}
+
+export interface ProjectOverviewItem {
+  name: string;
+  display_name: string | null;
+  description: string;
+  last_active: string | null;
+  first_seen: string | null;
+  total_lines: number;
+  total_files: number;
+  top_languages: ProjectLanguageLine[];
+  skills: ProjectSkillTime[];
+  /** Active hours in apps for this project from activity.apps. */
+  app_time_hours: number;
+}
+
+export interface SkillsProjectsDetailResponse {
+  summary: SkillsProjectsSummary;
+  skills: SkillTimeEntry[];
+  projects: ProjectOverviewItem[];
+}
+
+export async function fetchSkillsProjectsDetail(): Promise<SkillsProjectsDetailResponse> {
+  const response = await api.get<SkillsProjectsDetailResponse>('/dashboard/skills-projects-detail');
+  return response.data;
+}
+
+export interface ProjectLanguageShare {
+  name: string;
+  lines: number;
+  percent: number;
+}
+
+export interface ProjectSkillRow {
+  name: string;
+  duration_sec: number;
+  duration_hours: number;
+}
+
+export interface ProjectBehaviorSummary {
+  avg_typing_kpm: number;
+  avg_mouse_cpm: number;
+  total_idle_hours: number;
+}
+
+export interface ProjectNamedHoursRow {
+  name: string;
+  duration_hours: number;
+  percent: number;
+}
+
+export interface ProjectContextBreakdown {
+  flow_hours: number;
+  debugging_hours: number;
+  research_hours: number;
+  communication_hours: number;
+  distracted_hours: number;
+  other_hours: number;
+}
+
+export interface ProjectDetailResponse {
+  project_name: string;
+  display_name: string | null;
+  description: string;
+  first_seen: string | null;
+  last_active: string | null;
+  /** Hours in desktop apps while this project was active (activity.apps). */
+  app_time_hours: number;
+  total_lines: number;
+  total_files: number;
+  /** Lines of code by language from the latest project snapshot (current_loc). */
+  languages: ProjectLanguageShare[];
+  top_apps: ProjectNamedHoursRow[];
+  languages_by_active_time: ProjectNamedHoursRow[];
+  context_breakdown: ProjectContextBreakdown;
+  behavior: ProjectBehaviorSummary;
+  skills: ProjectSkillRow[];
+}
+
+type ProjectDetailApiPayload = Omit<
+  ProjectDetailResponse,
+  "top_apps" | "languages_by_active_time" | "context_breakdown" | "behavior" | "skills"
+> & {
+  top_apps?: ProjectNamedHoursRow[];
+  languages_by_active_time?: ProjectNamedHoursRow[];
+  context_breakdown?: ProjectContextBreakdown;
+  behavior?: ProjectBehaviorSummary;
+  skills?: ProjectSkillRow[];
+};
+
+export interface UpdateProjectBody {
+  display_name?: string;
+  description?: string;
+}
+
+const emptyProjectContextBreakdown: ProjectContextBreakdown = {
+  flow_hours: 0,
+  debugging_hours: 0,
+  research_hours: 0,
+  communication_hours: 0,
+  distracted_hours: 0,
+  other_hours: 0,
+};
+
+const emptyProjectBehavior: ProjectBehaviorSummary = {
+  avg_typing_kpm: 0,
+  avg_mouse_cpm: 0,
+  total_idle_hours: 0,
+};
+
+function normalizeProjectDetailResponse(data: ProjectDetailApiPayload): ProjectDetailResponse {
+  const skills = (data.skills ?? []).map((s) => ({
+    ...s,
+    duration_sec: s.duration_sec ?? Math.round((s.duration_hours || 0) * 3600),
+  }));
+  return {
+    ...data,
+    top_apps: data.top_apps ?? [],
+    languages_by_active_time: data.languages_by_active_time ?? [],
+    context_breakdown: data.context_breakdown ?? emptyProjectContextBreakdown,
+    behavior: data.behavior ?? emptyProjectBehavior,
+    skills,
+  };
+}
+
+export async function fetchProjectDetail(projectName: string): Promise<ProjectDetailResponse> {
+  const path = `/dashboard/projects/${encodeURIComponent(projectName)}`;
+  const response = await api.get<ProjectDetailApiPayload>(path);
+  return normalizeProjectDetailResponse(response.data);
+}
+
+export async function patchProject(
+  projectName: string,
+  body: UpdateProjectBody,
+): Promise<ProjectDetailResponse> {
+  const path = `/dashboard/projects/${encodeURIComponent(projectName)}`;
+  const response = await api.patch<ProjectDetailApiPayload>(path, body);
+  return normalizeProjectDetailResponse(response.data);
+}
+
+/** Permanently removes the project and all daily activity rows for it (server-side). */
+export async function deleteProject(projectName: string): Promise<void> {
+  const path = `/dashboard/projects/${encodeURIComponent(projectName)}`;
+  await api.delete(path);
+}
+
+// ============= Profile page =============
+
+export interface ProfileProjectInsight {
+  kind: "flow_focus" | "dominant_context" | "none";
+  flow_focus_percent?: number;
+  label?: string;
+  percent?: number;
+}
+
+export interface ProfileProjectSkillRow {
+  name: string;
+  duration_sec: number;
+  duration_hours: number;
+  percent: number;
+}
+
+export interface ProfileProjectLanguageShare {
+  name: string;
+  percent: number;
+}
+
+export interface ProfileProjectAppRow {
+  name: string;
+  duration_hours: number;
+  percent: number;
+}
+
+export interface ProfileProjectCard {
+  project_name: string;
+  display_name: string | null;
+  description: string;
+  last_active: string | null;
+  app_time_hours: number;
+  languages: ProfileProjectLanguageShare[];
+  top_apps: ProfileProjectAppRow[];
+  top_skills: ProfileProjectSkillRow[];
+  insight: ProfileProjectInsight;
+}
+
+export interface ProfileGlobalSkillRow {
+  name: string;
+  duration_hours: number;
+  percent: number;
+}
+
+export interface ProfileGlobalAppRow {
+  name: string;
+  duration_hours: number;
+  percent: number;
+}
+
+export interface ProfileGlobalLanguageRow {
+  name: string;
+  lines: number;
+  percent: number;
+}
+
+export interface ProfilePageResponse {
+  streak_days: number;
+  total_app_time_hours: number;
+  total_projects: number;
+  global_flow_focus_percent: number | null;
+  top_skills: ProfileGlobalSkillRow[];
+  top_apps: ProfileGlobalAppRow[];
+  top_languages: ProfileGlobalLanguageRow[];
+  projects: ProfileProjectCard[];
+}
+
+export async function fetchProfilePage(): Promise<ProfilePageResponse> {
+  const response = await api.get<ProfilePageResponse>("/dashboard/profile-page");
+  return response.data;
+}
+
+export interface PublicProfileUser {
+  name: string;
+  profilePhoto: string | null;
+  description: string;
+  github_url: string | null;
+  linkedin_url: string | null;
+  twitter_url: string | null;
+  createdAt: string | null;
+}
+
+type PublicProfileUserApi = PublicProfileUser & {
+  profile_photo?: string | null;
+};
+
+export interface PublicProfileResponse {
+  user: PublicProfileUser;
+  profile: ProfilePageResponse;
+}
+
+function normalizePublicUser(raw: PublicProfileUserApi): PublicProfileUser {
+  return {
+    name: raw.name,
+    profilePhoto: raw.profilePhoto ?? raw.profile_photo ?? null,
+    description: raw.description ?? "",
+    github_url: raw.github_url ?? null,
+    linkedin_url: raw.linkedin_url ?? null,
+    twitter_url: raw.twitter_url ?? null,
+    createdAt: raw.createdAt ?? null,
+  };
+}
+
+export async function fetchPublicProfile(userId: string): Promise<PublicProfileResponse> {
+  const response = await api.get<{ user: PublicProfileUserApi; profile: ProfilePageResponse }>(
+    `/dashboard/users/${encodeURIComponent(userId)}/public-profile`,
+  );
+  return {
+    user: normalizePublicUser(response.data.user),
+    profile: response.data.profile,
+  };
+}
+
+// ============= Peers directory =============
+
+export interface PeerCard {
+  user_id: string;
+  name: string;
+  profilePhoto: string | null;
+  bio: string;
+  top_skills: string[];
+  top_projects: string[];
+  top_apps: string[];
+}
+
+type PeerCardApi = PeerCard & { profile_photo_url?: string | null };
+
+function normalizePeerCard(raw: PeerCardApi): PeerCard {
+  return {
+    user_id: raw.user_id,
+    name: raw.name,
+    profilePhoto: raw.profilePhoto ?? raw.profile_photo_url ?? null,
+    bio: raw.bio ?? "",
+    top_skills: raw.top_skills ?? [],
+    top_projects: raw.top_projects ?? [],
+    top_apps: raw.top_apps ?? [],
+  };
+}
+
+export async function fetchPeersSearch(q: string): Promise<PeerCard[]> {
+  const response = await api.get<{ peers: PeerCardApi[] }>("/dashboard/peers/search", {
+    params: { q: q.trim() || undefined },
+  });
+  return (response.data.peers ?? []).map(normalizePeerCard);
+}
+
+export default api;
