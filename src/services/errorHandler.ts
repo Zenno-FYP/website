@@ -10,8 +10,11 @@ export const handleApiError = (error: AxiosError): string => {
   }
 
   if (error.response?.status === 400) {
-    const data = error.response.data as any;
-    return data?.message || 'Invalid request. Please check your information.';
+    const data = error.response.data as { message?: string | string[] };
+    const msg = data?.message;
+    if (Array.isArray(msg)) return msg.join(', ');
+    if (typeof msg === 'string') return msg;
+    return 'Invalid request. Please check your information.';
   }
 
   if (error.response?.status === 404) {
@@ -23,7 +26,11 @@ export const handleApiError = (error: AxiosError): string => {
   }
 
   if (error.message === 'Network Error') {
-    return 'Network error. Please check your connection.';
+    return 'Network error. Check that the API is running and VITE_API_BASE_URL points to the backend (e.g. http://localhost:3000).';
+  }
+
+  if (error.code === 'ERR_NO_FIREBASE_USER' || error.code === 'ERR_NETWORK') {
+    return error.message;
   }
 
   return error.message || 'An unexpected error occurred. Please try again.';

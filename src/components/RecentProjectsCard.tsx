@@ -6,6 +6,11 @@ import { useFirebaseUser, useUser } from "@/stores/useAuthHooks";
 import { fetchProjectInsights, ProjectDetail } from "@/services/api";
 import { getRelativeTime, getActivityStatus } from "@/utils/timeFormatter";
 
+function projectListTitle(project: ProjectDetail): string {
+  const d = project.display_name?.trim();
+  return d && d.length > 0 ? d : project.name;
+}
+
 const PROJECT_LABEL_COLORS = [
   { bg: "from-green-500 to-emerald-600", icon: "from-green-500 to-emerald-600", iconText: "text-white" },
   { bg: "from-blue-500 to-cyan-500", icon: "from-blue-500 to-cyan-500", iconText: "text-white" },
@@ -124,7 +129,9 @@ export function RecentProjectsCard({ theme, onViewClick }: RecentProjectsCardPro
                     <span className={`font-semibold ${colorPair.iconText}`}>{projectId}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`truncate font-semibold mb-1.5 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{project.name}</p>
+                    <p className={`truncate font-semibold mb-1.5 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                      {projectListTitle(project)}
+                    </p>
                     <div className="flex items-center gap-2">
                       <span className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>{relativeTime}</span>
                     </div>

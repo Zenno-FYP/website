@@ -78,43 +78,43 @@ export const useAuthStore = create<AuthState>()(
           emailVerificationSent: false,
         }),
 
-      // Initialize Firebase auth - restores session from browser
+      // Initialize Firebase auth — persistent listener that keeps state in sync
+      // across token refreshes, email verification, and sign-out from other tabs.
       initializeAuth: async () => {
         return new Promise<void>((resolve) => {
           set({ isCheckingAuth: true });
+          let resolved = false;
           let timeout: NodeJS.Timeout;
-          
-          const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            // Clear timeout when auth state changes
+
+          onAuthStateChanged(auth, (firebaseUser) => {
             if (timeout) clearTimeout(timeout);
-            
+
             if (firebaseUser) {
-              console.log('Firebase user restored from session:', firebaseUser.email);
-              set({ 
-                firebaseUser, 
+              set({
+                firebaseUser,
                 isAuthenticated: true,
-                isCheckingAuth: false 
+                isCheckingAuth: false,
               });
             } else {
-              console.log('No Firebase user found in session');
-              set({ 
-                firebaseUser: null, 
+              set({
+                firebaseUser: null,
                 isAuthenticated: false,
-                isCheckingAuth: false 
+                isCheckingAuth: false,
               });
             }
-            
-            // Unsubscribe after first check
-            unsubscribe();
-            resolve();
+
+            if (!resolved) {
+              resolved = true;
+              resolve();
+            }
           });
 
-          // Timeout after 3 seconds to prevent infinite waiting
           timeout = setTimeout(() => {
-            console.log('Auth initialization timeout');
-            unsubscribe();
-            set({ isCheckingAuth: false });
-            resolve();
+            if (!resolved) {
+              resolved = true;
+              set({ isCheckingAuth: false });
+              resolve();
+            }
           }, 3000);
         });
       },
@@ -169,9 +169,7 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-store', // localStorage key
       partialize: (state) => ({
-        // Only persist user profile, not firebaseUser (Firebase handles its own session)
         user: state.user,
-        isAuthenticated: state.isAuthenticated,
         emailVerificationSent: state.emailVerificationSent,
       }),
     }

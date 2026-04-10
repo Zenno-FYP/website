@@ -9,7 +9,7 @@ interface DeveloperTrendsCardProps {
   usageTrendData?: UsageTrendDay[];
 }
 
-type MetricFilter = "all" | "focused" | "reading" | "distracted" | "idle";
+type MetricFilter = "all" | "flow" | "debugging" | "research" | "communication" | "distracted";
 
 export function DeveloperTrendsCard({ theme, usageTrendData }: DeveloperTrendsCardProps) {
   const [metricFilter, setMetricFilter] = useState<MetricFilter>("all");
@@ -21,21 +21,23 @@ export function DeveloperTrendsCard({ theme, usageTrendData }: DeveloperTrendsCa
 
     return usageTrendData.map(day => ({
       time: day.day_name,
-      focused_hours: day.focused_hours,
-      reading_hours: day.reading_hours,
+      flow_hours: day.flow_hours,
+      debugging_hours: day.debugging_hours,
+      research_hours: day.research_hours,
+      communication_hours: day.communication_hours,
       distracted_hours: day.distracted_hours,
-      idle_hours: day.idle_hours,
     }));
   }, [usageTrendData]);
 
-  const shouldShowLine = (metric: "focused_hours" | "reading_hours" | "distracted_hours" | "idle_hours") => {
+  const shouldShowLine = (metric: "flow_hours" | "debugging_hours" | "research_hours" | "communication_hours" | "distracted_hours") => {
     if (metricFilter === "all") return true;
     const metricMap: Record<MetricFilter, string> = {
       "all": "all",
-      "focused": "focused_hours",
-      "reading": "reading_hours",
-      "distracted": "distracted_hours",
-      "idle": "idle_hours"
+      "flow": "flow_hours",
+      "debugging": "debugging_hours",
+      "research": "research_hours",
+      "communication": "communication_hours",
+      "distracted": "distracted_hours"
     };
     return metricMap[metricFilter] === metric;
   };
@@ -54,7 +56,7 @@ export function DeveloperTrendsCard({ theme, usageTrendData }: DeveloperTrendsCa
       <div className="flex items-center justify-between mb-6 relative z-10">
         <div>
           <h3 className={`mb-1 font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Usage Trend</h3>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <Badge 
               variant="outline" 
               className={`rounded-full cursor-pointer transition-all ${
@@ -71,28 +73,54 @@ export function DeveloperTrendsCard({ theme, usageTrendData }: DeveloperTrendsCa
             <Badge 
               variant="outline" 
               className={`rounded-full cursor-pointer transition-all ${
-                metricFilter === "focused" 
+                metricFilter === "flow" 
                   ? "border-[#5B6FD8] text-[#5B6FD8] bg-[#5B6FD8]/10" 
                   : theme === 'dark'
                     ? "border-gray-600 text-gray-400 bg-gray-800/50"
                     : "border-gray-300 text-gray-500 bg-gray-50"
               }`}
-              onClick={() => setMetricFilter("focused")}
+              onClick={() => setMetricFilter("flow")}
             >
-              ● Focused
+              ● Flow
             </Badge>
             <Badge 
               variant="outline" 
               className={`rounded-full cursor-pointer transition-all ${
-                metricFilter === "reading" 
+                metricFilter === "debugging" 
+                  ? "border-[#FF6B6B] text-[#FF6B6B] bg-[#FF6B6B]/10" 
+                  : theme === 'dark'
+                    ? "border-gray-600 text-gray-400 bg-gray-800/50"
+                    : "border-gray-300 text-gray-500 bg-gray-50"
+              }`}
+              onClick={() => setMetricFilter("debugging")}
+            >
+              ● Debugging
+            </Badge>
+            <Badge 
+              variant="outline" 
+              className={`rounded-full cursor-pointer transition-all ${
+                metricFilter === "research" 
                   ? "border-[#4ECDC4] text-[#4ECDC4] bg-[#4ECDC4]/10" 
                   : theme === 'dark'
                     ? "border-gray-600 text-gray-400 bg-gray-800/50"
                     : "border-gray-300 text-gray-500 bg-gray-50"
               }`}
-              onClick={() => setMetricFilter("reading")}
+              onClick={() => setMetricFilter("research")}
             >
-              ● Reading
+              ● Research
+            </Badge>
+            <Badge 
+              variant="outline" 
+              className={`rounded-full cursor-pointer transition-all ${
+                metricFilter === "communication" 
+                  ? "border-[#FFD93D] text-[#FFD93D] bg-[#FFD93D]/10" 
+                  : theme === 'dark'
+                    ? "border-gray-600 text-gray-400 bg-gray-800/50"
+                    : "border-gray-300 text-gray-500 bg-gray-50"
+              }`}
+              onClick={() => setMetricFilter("communication")}
+            >
+              ● Communication
             </Badge>
             <Badge 
               variant="outline" 
@@ -106,19 +134,6 @@ export function DeveloperTrendsCard({ theme, usageTrendData }: DeveloperTrendsCa
               onClick={() => setMetricFilter("distracted")}
             >
               ● Distracted
-            </Badge>
-            <Badge 
-              variant="outline" 
-              className={`rounded-full cursor-pointer transition-all ${
-                metricFilter === "idle" 
-                  ? "border-[#FFD93D] text-[#FFD93D] bg-[#FFD93D]/10" 
-                  : theme === 'dark'
-                    ? "border-gray-600 text-gray-400 bg-gray-800/50"
-                    : "border-gray-300 text-gray-500 bg-gray-50"
-              }`}
-              onClick={() => setMetricFilter("idle")}
-            >
-              ● Idle
             </Badge>
           </div>
         </div>
@@ -161,26 +176,48 @@ export function DeveloperTrendsCard({ theme, usageTrendData }: DeveloperTrendsCa
               labelFormatter={() => ''}
             />
             <Legend />
-            {shouldShowLine("focused_hours") && (
+            {shouldShowLine("flow_hours") && (
               <Line 
                 type="monotone" 
-                dataKey="focused_hours" 
+                dataKey="flow_hours" 
                 stroke="#5B6FD8" 
                 strokeWidth={3}
                 dot={false}
                 activeDot={{ r: 6, fill: '#5B6FD8' }}
-                name="Focused"
+                name="Flow"
               />
             )}
-            {shouldShowLine("reading_hours") && (
+            {shouldShowLine("debugging_hours") && (
               <Line 
                 type="monotone" 
-                dataKey="reading_hours" 
+                dataKey="debugging_hours" 
+                stroke="#FF6B6B" 
+                strokeWidth={3}
+                dot={false}
+                activeDot={{ r: 6, fill: '#FF6B6B' }}
+                name="Debugging"
+              />
+            )}
+            {shouldShowLine("research_hours") && (
+              <Line 
+                type="monotone" 
+                dataKey="research_hours" 
                 stroke="#4ECDC4" 
                 strokeWidth={3}
                 dot={false}
                 activeDot={{ r: 6, fill: '#4ECDC4' }}
-                name="Reading"
+                name="Research"
+              />
+            )}
+            {shouldShowLine("communication_hours") && (
+              <Line 
+                type="monotone" 
+                dataKey="communication_hours" 
+                stroke="#FFD93D" 
+                strokeWidth={3}
+                dot={false}
+                activeDot={{ r: 6, fill: '#FFD93D' }}
+                name="Communication"
               />
             )}
             {shouldShowLine("distracted_hours") && (
@@ -192,17 +229,6 @@ export function DeveloperTrendsCard({ theme, usageTrendData }: DeveloperTrendsCa
                 dot={false}
                 activeDot={{ r: 6, fill: '#FF6B9D' }}
                 name="Distracted"
-              />
-            )}
-            {shouldShowLine("idle_hours") && (
-              <Line 
-                type="monotone" 
-                dataKey="idle_hours" 
-                stroke="#FFD93D" 
-                strokeWidth={3}
-                dot={false}
-                activeDot={{ r: 6, fill: '#FFD93D' }}
-                name="Idle"
               />
             )}
           </LineChart>

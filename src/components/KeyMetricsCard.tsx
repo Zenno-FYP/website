@@ -1,45 +1,50 @@
 import { Card } from "./ui/card";
-import { TrendingUp, TrendingDown, Zap, Clock, Mouse, MousePointer } from "lucide-react";
+import { TrendingUp, TrendingDown, Zap, Clock, Keyboard, AlertCircle } from "lucide-react";
 import { PerformanceMetric } from "@/services/api";
+import { formatDurationHours } from "@/utils/durationFormat";
 
 interface KeyMetricsCardProps {
   theme: 'light' | 'dark';
   onMetricClick?: (metricType: 'metrics') => void;
   performanceData?: {
-    wpm: PerformanceMetric;
+    avg_typing_intensity: PerformanceMetric;
+    avg_mouse_click_rate: PerformanceMetric;
+    avg_corrections: PerformanceMetric;
     daily_active_average: PerformanceMetric;
-    total_clicks: PerformanceMetric;
-    total_scrolls: PerformanceMetric;
   };
 }
 
 export function KeyMetricsCard({ theme, onMetricClick, performanceData }: KeyMetricsCardProps) {
   const metricsConfig = [
     {
-      key: 'wpm',
-      label: "Words Per Minute",
-      icon: Zap,
+      key: 'avg_typing_intensity',
+      label: "Typing Intensity",
+      unit: "KPM",
+      icon: Keyboard,
       gradient: "from-[#5B6FD8] to-[#7C4DFF]",
       bgGradient: "from-[#5B6FD8]/10 to-[#7C4DFF]/5"
     },
     {
       key: 'daily_active_average',
-      label: "Daily Active Average",
+      label: null as string | null,
+      unit: null as string | null,
       icon: Clock,
       gradient: "from-[#FFD93D] to-[#FFC93D]",
       bgGradient: "from-[#FFD93D]/10 to-[#FFC93D]/5"
     },
     {
-      key: 'total_clicks',
-      label: "Total Clicks",
-      icon: Mouse,
+      key: 'avg_mouse_click_rate',
+      label: "Mouse Click Rate",
+      unit: "CPM",
+      icon: Zap,
       gradient: "from-[#4ECDC4] to-[#44A6A0]",
       bgGradient: "from-[#4ECDC4]/10 to-[#44A6A0]/5"
     },
     {
-      key: 'total_scrolls',
-      label: "Total Scrolls",
-      icon: MousePointer,
+      key: 'avg_corrections',
+      label: "Correction Rate",
+      unit: "%",
+      icon: AlertCircle,
       gradient: "from-[#FF6B9D] to-[#FF8FA3]",
       bgGradient: "from-[#FF6B9D]/10 to-[#FF8FA3]/5"
     }
@@ -57,8 +62,13 @@ export function KeyMetricsCard({ theme, onMetricClick, performanceData }: KeyMet
         
         const value = metric?.value ?? 0;
         const change = metric?.change_percent ?? 0;
-        
-        // Determine trend based on change_percent
+
+        const isDuration = config.key === "daily_active_average";
+        const fmt = isDuration ? formatDurationHours(value) : null;
+        const displayValue = isDuration ? fmt!.text : `${value.toFixed(1)}`;
+        const displayUnit = config.unit ?? "";
+        const displayLabel = config.label ?? (fmt?.label ? `${fmt.label} / day` : "Active time / day");
+
         let trend: 'up' | 'down' | 'neutral';
         if (change > 0) {
           trend = 'up';
@@ -104,18 +114,15 @@ export function KeyMetricsCard({ theme, onMetricClick, performanceData }: KeyMet
                 </div>
               </div>
 
-              {/* Metric Value */}
               <div className="mb-2">
                 <div className="flex items-baseline gap-1">
-                  <p className={`text-3xl ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{typeof value === 'number' ? value.toFixed(config.key === 'wpm' ? 1 : config.key === 'daily_active_average' ? 2 : 0) : value}</p>
-                  {config.key === 'daily_active_average' && (
-                    <span className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>hours</span>
+                  <p className={`text-3xl ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{displayValue}</p>
+                  {displayUnit && (
+                    <span className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{displayUnit}</span>
                   )}
                 </div>
               </div>
-
-              {/* Label */}
-              <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{config.label}</p>
+              <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{displayLabel}</p>
             </div>
           </Card>
         );

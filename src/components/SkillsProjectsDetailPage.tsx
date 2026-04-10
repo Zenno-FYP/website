@@ -1,110 +1,116 @@
+import { useEffect, useState } from "react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
-import { ArrowLeft, Code, Award, Clock, GitBranch, Calendar, Users, CheckCircle2, TrendingUp } from "lucide-react";
-import { LineChart, Line, BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import {
+  ArrowLeft,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Code,
+  Clock,
+  GitBranch,
+  FileCode,
+  Layers,
+  Award,
+} from "lucide-react";
+import { AxiosError } from "axios";
+import { fetchSkillsProjectsDetail, SkillsProjectsDetailResponse } from "@/services/api";
+import { handleApiError } from "@/services/errorHandler";
+import { useFirebaseUser } from "@/stores/useAuthHooks";
+import { getRelativeTime } from "@/utils/timeFormatter";
 
 interface SkillsProjectsDetailPageProps {
-  theme: 'light' | 'dark';
+  theme: "light" | "dark";
   onBack: () => void;
-  onProjectClick: (project: any) => void;
+  onProjectClick: (project: { name: string }) => void;
 }
 
-// Skills Data
-const skillsData = [
-  { skill: 'React', level: 95, hours: 450, projects: 12 },
-  { skill: 'TypeScript', level: 92, hours: 380, projects: 10 },
-  { skill: 'Node.js', level: 88, hours: 320, projects: 8 },
-  { skill: 'Python', level: 85, hours: 290, projects: 7 },
-  { skill: 'JavaScript', level: 98, hours: 520, projects: 15 },
-  { skill: 'CSS/Tailwind', level: 90, hours: 410, projects: 14 },
+const PREVIEW_LIMIT = 5;
+
+const PALETTE = [
+  "from-[#5B6FD8] to-[#7C4DFF]",
+  "from-[#4ECDC4] to-[#44A6A0]",
+  "from-[#FFD93D] to-[#FFC93D]",
+  "from-[#FF6B9D] to-[#FF8FA3]",
+  "from-[#9B59B6] to-[#8E44AD]",
 ];
 
-const skillGrowthData = [
-  { month: 'Jul', React: 85, TypeScript: 80, NodeJS: 75, Python: 72 },
-  { month: 'Aug', React: 88, TypeScript: 83, NodeJS: 78, Python: 76 },
-  { month: 'Sep', React: 90, TypeScript: 86, NodeJS: 82, Python: 80 },
-  { month: 'Oct', React: 92, TypeScript: 88, NodeJS: 85, Python: 82 },
-  { month: 'Nov', React: 93, TypeScript: 90, NodeJS: 87, Python: 84 },
-  { month: 'Dec', React: 95, TypeScript: 92, NodeJS: 88, Python: 85 },
-];
+function hashString(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h << 5) - h + s.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+}
 
-const radarSkillsData = [
-  { category: 'Frontend', score: 95 },
-  { category: 'Backend', score: 88 },
-  { category: 'Database', score: 82 },
-  { category: 'DevOps', score: 75 },
-  { category: 'Testing', score: 85 },
-  { category: 'Design', score: 78 },
-];
+function projectGradient(name: string): string {
+  return PALETTE[hashString(name) % PALETTE.length];
+}
 
-// Projects Data
-const detailedProjects = [
-  {
-    name: 'E-Commerce Platform',
-    status: 'In Progress',
-    progress: 75,
-    tech: ['React', 'Node.js', 'MongoDB'],
-    startDate: 'Nov 15, 2024',
-    deadline: 'Jan 15, 2025',
-    lastActive: '2 hours ago',
-    team: 5,
-    commits: 234,
-    hours: 156,
-    completedTasks: 45,
-    totalTasks: 60,
-    color: 'from-[#5B6FD8] to-[#7C4DFF]'
-  },
-  {
-    name: 'Analytics Dashboard',
-    status: 'In Progress',
-    progress: 60,
-    tech: ['TypeScript', 'React', 'Recharts'],
-    startDate: 'Dec 1, 2024',
-    deadline: 'Jan 30, 2025',
-    lastActive: '1 day ago',
-    team: 3,
-    commits: 128,
-    hours: 89,
-    completedTasks: 30,
-    totalTasks: 50,
-    color: 'from-[#4ECDC4] to-[#44A6A0]'
-  },
-  {
-    name: 'Mobile App Backend',
-    status: 'Completed',
-    progress: 100,
-    tech: ['Python', 'FastAPI', 'PostgreSQL'],
-    startDate: 'Oct 1, 2024',
-    deadline: 'Dec 15, 2024',
-    lastActive: '3 days ago',
-    team: 4,
-    commits: 312,
-    hours: 203,
-    completedTasks: 75,
-    totalTasks: 75,
-    color: 'from-[#FFD93D] to-[#FFC93D]'
-  },
-  {
-    name: 'CRM System',
-    status: 'Planning',
-    progress: 15,
-    tech: ['Next.js', 'TypeScript', 'Prisma'],
-    startDate: 'Dec 20, 2024',
-    deadline: 'Mar 1, 2025',
-    lastActive: '5 hours ago',
-    team: 6,
-    commits: 45,
-    hours: 28,
-    completedTasks: 8,
-    totalTasks: 95,
-    color: 'from-[#FF6B9D] to-[#FF8FA3]'
-  },
-];
+function projectDisplayTitle(project: { name: string; display_name: string | null }): string {
+  const d = project.display_name?.trim();
+  return d && d.length > 0 ? d : project.name;
+}
+
+function lastActiveRelative(iso: string | null): string {
+  if (!iso) return "No activity yet";
+  const rel = getRelativeTime(iso, 0);
+  return rel === "unknown" ? "Unknown" : rel;
+}
+
+function formatLines(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return `${n}`;
+}
 
 export function SkillsProjectsDetailPage({ theme, onBack, onProjectClick }: SkillsProjectsDetailPageProps) {
+  const firebaseUser = useFirebaseUser();
+  const [data, setData] = useState<SkillsProjectsDetailResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [skillsExpanded, setSkillsExpanded] = useState(false);
+  const [projectsExpanded, setProjectsExpanded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    fetchSkillsProjectsDetail()
+      .then((res) => {
+        if (!cancelled) setData(res);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          const message =
+            err instanceof AxiosError ? handleApiError(err) : "Could not load skills & projects. Try again later.";
+          setError(message);
+          console.error("fetchSkillsProjectsDetail:", err);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [firebaseUser?.uid]);
+
+  const gridBorder =
+    theme === "dark" ? "border-white/10 bg-gray-800/50" : "border-white/60 bg-white/50";
+
+  const skills = data?.skills ?? [];
+  const projects = data?.projects ?? [];
+  const summary = data?.summary;
+
+  const visibleSkills = skillsExpanded ? skills : skills.slice(0, PREVIEW_LIMIT);
+  const visibleProjects = projectsExpanded ? projects : projects.slice(0, PREVIEW_LIMIT);
+  const moreSkills = skills.length > PREVIEW_LIMIT;
+  const moreProjects = projects.length > PREVIEW_LIMIT;
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
+    <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
@@ -112,240 +118,294 @@ export function SkillsProjectsDetailPage({ theme, onBack, onProjectClick }: Skil
             variant="outline"
             size="icon"
             className={`rounded-xl backdrop-blur-xl transition-all ${
-              theme === 'dark'
-                ? 'bg-white/5 hover:bg-white/10 border-white/10 text-white'
-                : 'bg-white/50 hover:bg-white/70 border-white/60 text-gray-900'
+              theme === "dark"
+                ? "border-white/10 bg-white/5 text-white hover:bg-white/10"
+                : "border-white/60 bg-white/50 text-gray-900 hover:bg-white/70"
             }`}
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className={`text-3xl ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+            <h1 className={`text-3xl ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
               Skills & Projects Overview
             </h1>
-            <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-              Comprehensive analysis of your development skills and project portfolio
+            <p className={`mt-1 text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+              App active time per project from activity sync; skills and code from project snapshots
             </p>
           </div>
         </div>
       </div>
 
-      {/* Quick Stats Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className={`p-4 rounded-2xl shadow-lg backdrop-blur-2xl border ${
-          theme === 'dark' ? 'bg-gray-800/50 border-white/10' : 'bg-white/50 border-white/60'
-        }`}>
-          <div className="flex flex-col gap-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#5B6FD8] to-[#7C4DFF] flex items-center justify-center">
-              <Code className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Total Skills</p>
-              <p className={`text-xl ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>12</p>
-            </div>
-          </div>
-        </Card>
+      {loading && (
+        <p className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>Loading…</p>
+      )}
+      {error && (
+        <p className={theme === "dark" ? "text-red-400" : "text-red-600"}>{error}</p>
+      )}
 
-        <Card className={`p-4 rounded-2xl shadow-lg backdrop-blur-2xl border ${
-          theme === 'dark' ? 'bg-gray-800/50 border-white/10' : 'bg-white/50 border-white/60'
-        }`}>
-          <div className="flex flex-col gap-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#4ECDC4] to-[#44A6A0] flex items-center justify-center">
-              <GitBranch className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Active Projects</p>
-              <p className={`text-xl ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>4</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className={`p-4 rounded-2xl shadow-lg backdrop-blur-2xl border ${
-          theme === 'dark' ? 'bg-gray-800/50 border-white/10' : 'bg-white/50 border-white/60'
-        }`}>
-          <div className="flex flex-col gap-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FFD93D] to-[#FFC93D] flex items-center justify-center">
-              <Clock className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Total Hours</p>
-              <p className={`text-xl ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>2.4k</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className={`p-4 rounded-2xl shadow-lg backdrop-blur-2xl border ${
-          theme === 'dark' ? 'bg-gray-800/50 border-white/10' : 'bg-white/50 border-white/60'
-        }`}>
-          <div className="flex flex-col gap-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B9D] to-[#FF8FA3] flex items-center justify-center">
-              <Award className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Achievements</p>
-              <p className={`text-xl ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>28</p>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Skills Section */}
-      <div className="space-y-4">
-        <h2 className={`text-2xl ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-          Skills Analytics
-        </h2>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Skill Growth Over Time */}
-          <Card className={`p-6 rounded-3xl shadow-lg backdrop-blur-2xl border ${
-            theme === 'dark' ? 'bg-gray-800/50 border-white/10' : 'bg-white/50 border-white/60'
-          }`}>
-            <div className="mb-4">
-              <h3 className={`text-lg ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                Skill Growth (6 Months)
-              </h3>
-              <p className={`text-sm mt-0.5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                Proficiency progression over time
-              </p>
-            </div>
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={skillGrowthData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#ffffff15' : '#00000015'} vertical={false} />
-                <XAxis dataKey="month" stroke={theme === 'dark' ? '#9ca3af' : '#6b7280'} style={{ fontSize: '11px' }} />
-                <YAxis domain={[60, 100]} stroke={theme === 'dark' ? '#9ca3af' : '#6b7280'} style={{ fontSize: '11px' }} />
-                <Tooltip contentStyle={{ backgroundColor: theme === 'dark' ? '#1f2937' : '#ffffff', border: 'none', borderRadius: '12px' }} />
-                <Legend />
-                <Line type="monotone" dataKey="React" stroke="#5B6FD8" strokeWidth={2} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="TypeScript" stroke="#4ECDC4" strokeWidth={2} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="NodeJS" stroke="#FFD93D" strokeWidth={2} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="Python" stroke="#FF6B9D" strokeWidth={2} dot={{ r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </Card>
-
-          {/* Skill Categories Radar */}
-          <Card className={`p-6 rounded-3xl shadow-lg backdrop-blur-2xl border ${
-            theme === 'dark' ? 'bg-gray-800/50 border-white/10' : 'bg-white/50 border-white/60'
-          }`}>
-            <div className="mb-4">
-              <h3 className={`text-lg ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                Skill Categories
-              </h3>
-              <p className={`text-sm mt-0.5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                Proficiency across development areas
-              </p>
-            </div>
-            <ResponsiveContainer width="100%" height={280}>
-              <RadarChart data={radarSkillsData}>
-                <PolarGrid stroke={theme === 'dark' ? '#ffffff20' : '#00000020'} />
-                <PolarAngleAxis dataKey="category" stroke={theme === 'dark' ? '#9ca3af' : '#6b7280'} style={{ fontSize: '11px' }} />
-                <PolarRadiusAxis angle={90} domain={[0, 100]} stroke={theme === 'dark' ? '#9ca3af' : '#6b7280'} />
-                <Radar name="Proficiency" dataKey="score" stroke="#5B6FD8" fill="#5B6FD8" fillOpacity={0.6} />
-                <Tooltip contentStyle={{ backgroundColor: theme === 'dark' ? '#1f2937' : '#ffffff', border: 'none', borderRadius: '12px' }} />
-              </RadarChart>
-            </ResponsiveContainer>
-          </Card>
-        </div>
-
-        {/* Individual Skills List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {skillsData.map((skill, index) => (
-            <Card key={index} className={`p-4 rounded-2xl shadow-lg backdrop-blur-2xl border transition-all hover:scale-105 ${
-              theme === 'dark' ? 'bg-gray-800/50 border-white/10' : 'bg-white/50 border-white/60'
-            }`}>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Code className={`w-5 h-5 ${theme === 'dark' ? 'text-purple-400' : 'text-[#5B6FD8]'}`} />
-                  <h4 className={`text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                    {skill.skill}
-                  </h4>
+      {!loading && !error && data && (
+        <>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <Card className={`rounded-2xl border p-4 shadow-lg backdrop-blur-2xl ${gridBorder}`}>
+              <div className="flex flex-col gap-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#5B6FD8] to-[#7C4DFF]">
+                  <Layers className="h-5 w-5 text-white" />
                 </div>
-                <span className={`text-sm font-semibold ${theme === 'dark' ? 'text-purple-400' : 'text-[#5B6FD8]'}`}>
-                  {skill.level}%
-                </span>
-              </div>
-              <div className={`h-2 rounded-full overflow-hidden mb-2 ${theme === 'dark' ? 'bg-gray-700/50' : 'bg-gray-200'}`}>
-                <div 
-                  className="h-full bg-gradient-to-r from-[#5B6FD8] to-[#7C4DFF] rounded-full transition-all"
-                  style={{ width: `${skill.level}%` }}
-                />
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
-                  {skill.hours}h
-                </span>
-                <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
-                  {skill.projects} projects
-                </span>
+                <div>
+                  <p className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Projects</p>
+                  <p className={`text-xl tabular-nums ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                    {summary?.total_projects ?? 0}
+                  </p>
+                </div>
               </div>
             </Card>
-          ))}
-        </div>
-      </div>
 
-      {/* Projects Section */}
-      <div className="space-y-4">
-        <h2 className={`text-2xl ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-          Active Projects
-        </h2>
-
-        <div className="grid grid-cols-1 gap-4">
-          {detailedProjects.map((project, index) => (
-            <Card 
-              key={index} 
-              onClick={() => onProjectClick(project)}
-              className={`p-5 rounded-2xl shadow-lg backdrop-blur-2xl border transition-all hover:shadow-xl cursor-pointer ${
-                theme === 'dark' ? 'bg-gray-800/50 border-white/10 hover:bg-gray-800/70' : 'bg-white/50 border-white/60 hover:bg-white/70'
-              }`}
-            >
-              <div className="flex items-start gap-4">
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${project.color} flex items-center justify-center flex-shrink-0`}>
-                  <GitBranch className="w-6 h-6 text-white" />
+            <Card className={`rounded-2xl border p-4 shadow-lg backdrop-blur-2xl ${gridBorder}`}>
+              <div className="flex flex-col gap-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#4ECDC4] to-[#44A6A0]">
+                  <Clock className="h-5 w-5 text-white" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <h3 className={`text-base font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                        {project.name}
-                      </h3>
-                      <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                        Click to view details
+                <div>
+                  <p className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Active time</p>
+                  <p className={`text-xl tabular-nums ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                    {(summary?.total_app_time_hours ?? 0) < 1
+                      ? `${Math.round((summary?.total_app_time_hours ?? 0) * 60)} min`
+                      : `${(summary?.total_app_time_hours ?? 0).toFixed(1)}h`}
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            <Card className={`rounded-2xl border p-4 shadow-lg backdrop-blur-2xl ${gridBorder}`}>
+              <div className="flex flex-col gap-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#FFD93D] to-[#FFC93D]">
+                  <Award className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Skills tracked</p>
+                  <p className={`text-xl tabular-nums ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                    {summary?.unique_skills_count ?? 0}
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            <Card className={`rounded-2xl border p-4 shadow-lg backdrop-blur-2xl ${gridBorder}`}>
+              <div className="flex flex-col gap-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B9D] to-[#FF8FA3]">
+                  <FileCode className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Lines of code</p>
+                  <p className={`text-xl ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                    {formatLines(summary?.total_lines_of_code ?? 0)}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className={`text-2xl ${theme === "dark" ? "text-white" : "text-gray-900"}`}>Skills by time</h2>
+            <p className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+              From project skill tracking (all projects combined). Active time per project is shown below.
+            </p>
+
+            {skills.length === 0 ? (
+              <Card className={`rounded-2xl border p-8 text-center ${gridBorder}`}>
+                <p className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>
+                  No skill time recorded yet. Sync the desktop agent with your projects.
+                </p>
+              </Card>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {visibleSkills.map((skill) => (
+                    <Card
+                      key={skill.name}
+                      className={`rounded-2xl border p-4 shadow-lg backdrop-blur-2xl transition-all hover:shadow-md ${gridBorder}`}
+                    >
+                      <div className="mb-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Code className={`h-5 w-5 ${theme === "dark" ? "text-purple-400" : "text-[#5B6FD8]"}`} />
+                          <h4 className={`text-sm font-medium ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                            {skill.name}
+                          </h4>
+                        </div>
+                        <span className={`text-sm font-semibold tabular-nums ${theme === "dark" ? "text-purple-300" : "text-[#5B6FD8]"}`}>
+                          {skill.percent_of_total.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className={`mb-2 h-2 overflow-hidden rounded-full ${theme === "dark" ? "bg-gray-700/50" : "bg-gray-200"}`}>
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-[#5B6FD8] to-[#7C4DFF] transition-all"
+                          style={{ width: `${Math.min(100, skill.percent_of_total)}%` }}
+                        />
+                      </div>
+                      <p className={`text-xs tabular-nums ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                        {skill.duration_hours < 1
+                          ? `${Math.round(skill.duration_hours * 60)} min total`
+                          : `${skill.duration_hours.toFixed(1)}h total`}
                       </p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-1.5 mb-3">
-                    {project.tech.map((tech, techIndex) => (
-                      <span key={techIndex} className={`px-2 py-0.5 rounded-md text-xs ${
-                        theme === 'dark' ? 'bg-white/10 text-gray-300' : 'bg-gray-100 text-gray-700'
-                      }`}>
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-2">
-                      <Clock className={`w-4 h-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />
-                      <div>
-                        <p className={`text-[10px] ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>Hours Spent</p>
-                        <p className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{project.hours}h</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className={`w-4 h-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />
-                      <div>
-                        <p className={`text-[10px] ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>Last Active</p>
-                        <p className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{project.lastActive}</p>
-                      </div>
-                    </div>
-                  </div>
+                    </Card>
+                  ))}
                 </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </div>
+                {moreSkills && (
+                  <div className="flex justify-center">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => setSkillsExpanded((e) => !e)}
+                      className={`gap-1.5 rounded-xl ${
+                        theme === "dark"
+                          ? "text-gray-300 hover:bg-white/10 hover:text-white"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      {skillsExpanded ? (
+                        <>
+                          Show less
+                          <ChevronUp className="h-4 w-4" />
+                        </>
+                      ) : (
+                        <>
+                          View more ({skills.length - PREVIEW_LIMIT} more)
+                          <ChevronDown className="h-4 w-4" />
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <h2 className={`text-2xl ${theme === "dark" ? "text-white" : "text-gray-900"}`}>Projects</h2>
+            <p className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+              Name and description; open a project to edit. Sorted by most recently active.
+            </p>
+
+            {projects.length === 0 ? (
+              <Card className={`rounded-2xl border p-8 text-center ${gridBorder}`}>
+                <p className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>
+                  No projects synced yet.
+                </p>
+              </Card>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {visibleProjects.map((project) => {
+                    const title = projectDisplayTitle(project);
+                    const desc = project.description?.trim();
+                    return (
+                      <Card
+                        key={project.name}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => onProjectClick({ name: project.name })}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            onProjectClick({ name: project.name });
+                          }
+                        }}
+                        className={`group cursor-pointer overflow-hidden rounded-2xl border shadow-lg backdrop-blur-2xl transition-all hover:shadow-xl ${
+                          theme === "dark"
+                            ? "border-white/10 bg-gray-800/40 hover:border-white/15"
+                            : "border-white/60 bg-white/40 hover:border-gray-300/80"
+                        }`}
+                      >
+                        <div className="flex items-stretch gap-0">
+                          <div
+                            className={`w-1.5 shrink-0 bg-gradient-to-b ${projectGradient(project.name)}`}
+                            aria-hidden
+                          />
+                          <div className="flex min-w-0 flex-1 items-center gap-3 p-4 pr-3">
+                            <div
+                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br shadow-md ${projectGradient(project.name)}`}
+                            >
+                              <GitBranch className="h-5 w-5 text-white" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <h3
+                                className={`truncate font-semibold tracking-tight ${theme === "dark" ? "text-white" : "text-gray-900"}`}
+                                title={title}
+                              >
+                                {title}
+                              </h3>
+                              {project.display_name?.trim() && project.display_name.trim() !== project.name && (
+                                <p
+                                  className={`truncate text-xs ${theme === "dark" ? "text-gray-500" : "text-gray-500"}`}
+                                  title={project.name}
+                                >
+                                  {project.name}
+                                </p>
+                              )}
+                              <p
+                                className={`mt-1 line-clamp-2 text-sm leading-snug ${
+                                  desc
+                                    ? theme === "dark"
+                                      ? "text-gray-400"
+                                      : "text-gray-600"
+                                    : theme === "dark"
+                                      ? "text-gray-600 italic"
+                                      : "text-gray-400 italic"
+                                }`}
+                              >
+                                {desc || "No description yet — add one on the project page."}
+                              </p>
+                              <p
+                                className={`mt-2 text-xs tabular-nums ${theme === "dark" ? "text-gray-500" : "text-gray-500"}`}
+                              >
+                                <span className="font-medium">Last active</span>
+                                {" · "}
+                                {lastActiveRelative(project.last_active)}
+                              </p>
+                            </div>
+                            <ChevronRight
+                              className={`h-5 w-5 shrink-0 transition-transform group-hover:translate-x-0.5 ${
+                                theme === "dark" ? "text-gray-500" : "text-gray-400"
+                              }`}
+                              aria-hidden
+                            />
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+                {moreProjects && (
+                  <div className="flex justify-center">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => setProjectsExpanded((e) => !e)}
+                      className={`gap-1.5 rounded-xl ${
+                        theme === "dark"
+                          ? "text-gray-300 hover:bg-white/10 hover:text-white"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      {projectsExpanded ? (
+                        <>
+                          Show less
+                          <ChevronUp className="h-4 w-4" />
+                        </>
+                      ) : (
+                        <>
+                          View more ({projects.length - PREVIEW_LIMIT} more)
+                          <ChevronDown className="h-4 w-4" />
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -56,10 +56,6 @@ export function TopLanguagesCard({ theme, onViewClick }: TopLanguagesCardProps) 
         setIsLoading(true);
         setError(null);
         
-        // Get fresh token to ensure session is valid
-        await firebaseUser.getIdToken(true);
-        console.log('Loading language distribution for user:', firebaseUser.email);
-        
         const data = await fetchToolUsage();
         const langData = data.language_distribution.languages;
         

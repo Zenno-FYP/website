@@ -6,6 +6,14 @@ export interface UpdateUserDto {
   profilePhoto?: File;
 }
 
+export interface ProfilePreferences {
+  hidden_project_names: string[];
+  project_order: string[];
+  hidden_skill_names: string[];
+  hidden_app_names: string[];
+  hidden_language_names: string[];
+}
+
 export interface User {
   _id: string;
   email: string;
@@ -17,6 +25,22 @@ export interface User {
   createdAt: string;
   updatedAt: string;
   timezone_offset: number;
+  description?: string;
+  github_url?: string | null;
+  linkedin_url?: string | null;
+  twitter_url?: string | null;
+  profile_preferences?: ProfilePreferences;
+}
+
+export interface PatchProfilePayload {
+  name?: string;
+  description?: string;
+  github_url?: string;
+  linkedin_url?: string;
+  twitter_url?: string;
+  profile_preferences?: Partial<ProfilePreferences>;
+  /** Clears stored profile photo (use when user removes picture without uploading a new one). */
+  remove_profile_photo?: boolean;
 }
 
 export interface ApiResponse<T> {
@@ -25,14 +49,23 @@ export interface ApiResponse<T> {
   data: T;
 }
 
+type UserApiPayload = User & { profile_photo?: string | null };
+
+function normalizeUser(d: UserApiPayload): User {
+  return {
+    ...d,
+    profilePhoto: d.profilePhoto ?? d.profile_photo ?? null,
+  };
+}
+
 export const userService = {
   /**
    * Get current user profile
    * @returns User profile from backend
    */
   async getProfile(): Promise<User> {
-    const response = await api.get<ApiResponse<User>>('/user/me');
-    return response.data.data;
+    const response = await api.get<ApiResponse<UserApiPayload>>("/user/me");
+    return normalizeUser(response.data.data);
   },
 
   /**
@@ -59,7 +92,7 @@ export const userService = {
       },
     });
 
-    return response.data.data;
+    return normalizeUser(response.data.data as UserApiPayload);
   },
 
   /**
@@ -84,6 +117,20 @@ export const userService = {
       },
     });
 
-    return response.data.data;
+    return normalizeUser(response.data.data as UserApiPayload);
+  },
+
+  async patchProfile(data: PatchProfilePayload): Promise<User> {
+    const response = await api.patch<ApiResponse<UserApiPayload>>("/user/me", data);
+    return normalizeUser(response.data.data);
+  },
+
+  async updateProfilePhoto(file: File): Promise<User> {
+    const formData = new FormData();
+    formData.append("profilePhoto", file);
+    const response = await api.post<ApiResponse<UserApiPayload>>("/user/me/profile-photo", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return normalizeUser(response.data.data);
   },
 };
