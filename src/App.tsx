@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Toaster } from "sonner";
-import { useFirebaseUser, useIsCheckingAuth, useLogout } from "@/stores/useAuthHooks";
+import { useFirebaseUser, useIsCheckingAuth, useLogout, useUser } from "@/stores/useAuthHooks";
 import { useAuthStore } from "@/stores/authStore";
 import {
   fetchPerformanceMetrics,
@@ -64,6 +64,7 @@ export default function App() {
   
   // Subscribe to firebaseUser changes from store
   const firebaseUser = useFirebaseUser();
+  const profileUser = useUser();
 
   const loadHeaderChats = useCallback(async () => {
     if (!firebaseUser) return;
@@ -501,8 +502,18 @@ export default function App() {
                         : 'bg-white/40 hover:bg-white/60 border border-white/30 hover:border-white/50'
                     }`}>
                       <Avatar className="w-7 h-7">
-                        <AvatarImage src="https://images.unsplash.com/photo-1570170609489-43197f518df0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdCUyMHBlcnNvbnxlbnwxfHx8fDE3NjA2MDU5NTh8MA&ixlib=rb-4.1.0&q=80&w=1080" alt="User" />
-                        <AvatarFallback className="bg-gradient-to-br from-[#5B6FD8] to-[#7C4DFF] text-white text-xs">JD</AvatarFallback>
+                        <AvatarImage
+                          src={profileUser?.profilePhoto ?? firebaseUser?.photoURL ?? undefined}
+                          alt={profileUser?.name ?? firebaseUser?.displayName ?? "Account"}
+                        />
+                        <AvatarFallback className="bg-gradient-to-br from-[#5B6FD8] to-[#7C4DFF] text-white text-xs">
+                          {(profileUser?.name || firebaseUser?.displayName || "?")
+                            .split(/\s+/)
+                            .map((n) => n[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </AvatarFallback>
                       </Avatar>
                     </button>
                   </DropdownMenuTrigger>

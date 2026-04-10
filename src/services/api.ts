@@ -207,6 +207,8 @@ export interface Skill {
 
 export interface ProjectDetail {
   name: string;
+  /** Friendly label; use when non-empty, else `name`. */
+  display_name?: string | null;
   last_active: string; // ISO 8601 string in local timezone (no Z)
 }
 
