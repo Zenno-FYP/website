@@ -108,21 +108,52 @@ export function ChatsPage({ theme, onBack, initialPeerUserId, onConsumedInitialP
     void loadMessages(selectedConvId);
   }, [selectedConvId, myId, loadMessages]);
 
+  const [socketStatus, setSocketStatus] = useState<
+    "idle" | "connecting" | "connected" | "reconnecting"
+  >("idle");
+
   useEffect(() => {
     if (!firebaseUser) return;
     let cancelled = false;
     const origin = getBackendOriginForSocket();
 
-    void (async () => {
-      const token = await firebaseUser.getIdToken();
-      if (cancelled || !token) return;
+    const connectSocket = async () => {
+      setSocketStatus("connecting");
+      let token: string;
+      try {
+        token = await firebaseUser.getIdToken(true);
+      } catch {
+        setSocketStatus("idle");
+        return;
+      }
+      if (cancelled) return;
+
       const socket = io(`${origin}/chat`, {
         auth: { token },
         transports: ["websocket", "polling"],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 2000,
       });
       socketRef.current = socket;
-      socket.on("connect", () => setSocketConnected(true));
-      socket.on("disconnect", () => setSocketConnected(false));
+
+      socket.on("connect", () => {
+        setSocketConnected(true);
+        setSocketStatus("connected");
+      });
+      socket.on("disconnect", (reason) => {
+        setSocketConnected(false);
+        if (reason === "io server disconnect" || reason === "transport close") {
+          setSocketStatus("reconnecting");
+          socket.disconnect();
+          if (!cancelled) void reconnectWithFreshToken();
+        } else {
+          setSocketStatus("reconnecting");
+        }
+      });
+      socket.on("connect_error", () => {
+        setSocketStatus("reconnecting");
+      });
 
       socket.on(
         "chat:new_message",
@@ -139,11 +170,21 @@ export function ChatsPage({ theme, onBack, initialPeerUserId, onConsumedInitialP
           }
         },
       );
-    })();
+    };
+
+    const reconnectWithFreshToken = async () => {
+      if (cancelled) return;
+      socketRef.current?.disconnect();
+      socketRef.current = null;
+      await connectSocket();
+    };
+
+    void connectSocket();
 
     return () => {
       cancelled = true;
       setSocketConnected(false);
+      setSocketStatus("idle");
       socketRef.current?.disconnect();
       socketRef.current = null;
     };
@@ -425,7 +466,11 @@ export function ChatsPage({ theme, onBack, initialPeerUserId, onConsumedInitialP
                   </Button>
                 </div>
                 {!socketConnected && firebaseUser ? (
-                  <p className={`mt-2 text-xs ${panelMuted}`}>Connecting to chat…</p>
+                  <p className={`mt-2 text-xs ${panelMuted}`}>
+                    {socketStatus === "reconnecting"
+                      ? "Reconnecting…"
+                      : "Connecting to chat…"}
+                  </p>
                 ) : null}
               </div>
             </div>

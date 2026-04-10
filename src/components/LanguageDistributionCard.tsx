@@ -49,10 +49,6 @@ export function LanguageDistributionCard({ theme }: LanguageDistributionCardProp
         setIsLoading(true);
         setError(null);
         
-        // Get fresh token to ensure session is valid
-        await firebaseUser.getIdToken(true);
-        console.log('Loading language distribution chart for user:', firebaseUser.email);
-        
         const data = await fetchToolUsage();
         setLanguages(data.language_distribution.languages);
         setSummary(data.language_distribution.summary);

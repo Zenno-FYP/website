@@ -84,10 +84,6 @@ export function TopAppUsageCard({ theme, onViewClick }: TopAppUsageCardProps) {
         setIsLoading(true);
         setError(null);
         
-        // Get fresh token to ensure session is valid
-        await firebaseUser.getIdToken(true);
-        console.log('Loading tool usage for user:', firebaseUser.email);
-        
         const data = await fetchToolUsage();
         setApps(data.top_apps.apps);
         setTotalHours(data.top_apps.total_usage_hours);
@@ -162,7 +158,7 @@ export function TopAppUsageCard({ theme, onViewClick }: TopAppUsageCardProps) {
         ) : (
           <>
             <div className="mb-4">
-              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Last 7 Days: {totalHours.toFixed(2)} hours</p>
+              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Last 7 Days: {totalHours < 1 ? `${Math.round(totalHours * 60)} min` : `${totalHours.toFixed(1)}h`}</p>
             </div>
 
             <div className="space-y-3">
@@ -200,7 +196,7 @@ export function TopAppUsageCard({ theme, onViewClick }: TopAppUsageCardProps) {
                             </span>
                           </div>
                           <div className="text-right">
-                            <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{app.duration_hours.toFixed(2)}h</p>
+                            <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{app.duration_hours < 1 ? `${Math.round(app.duration_hours * 60)}m` : `${app.duration_hours.toFixed(1)}h`}</p>
                             <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>{app.percent_of_total.toFixed(1)}%</p>
                           </div>
                         </div>

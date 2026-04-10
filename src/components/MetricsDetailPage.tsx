@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
+import { formatDurationHours } from "@/utils/durationFormat";
 import {
   ArrowLeft,
   Zap,
@@ -88,8 +89,8 @@ export function MetricsDetailPage({ theme, onBack }: MetricsDetailPageProps) {
 
   const metricsConfig: {
     key: keyof NonNullable<PerformanceMetricsDetailResponse["performance_summary"]>;
-    label: string;
-    unit: string;
+    label: string | null;
+    unit: string | null;
     icon: typeof Keyboard;
     gradient: string;
     bgGradient: string;
@@ -104,8 +105,8 @@ export function MetricsDetailPage({ theme, onBack }: MetricsDetailPageProps) {
     },
     {
       key: "daily_active_average",
-      label: "Active Hours per Day",
-      unit: "hrs",
+      label: null,
+      unit: null,
       icon: Clock,
       gradient: "from-[#FFD93D] to-[#FFC93D]",
       bgGradient: "from-[#FFD93D]/10 to-[#FFC93D]/5",
@@ -188,6 +189,13 @@ export function MetricsDetailPage({ theme, onBack }: MetricsDetailPageProps) {
               const metric = getMetric(config.key);
               const value = metric?.value ?? 0;
               const change = metric?.change_percent ?? 0;
+
+              const isDuration = config.key === "daily_active_average";
+              const fmt = isDuration ? formatDurationHours(value) : null;
+              const displayValue = isDuration ? fmt!.text : `${value.toFixed(1)}`;
+              const displayUnit = config.unit ?? "";
+              const displayLabel = config.label ?? (fmt?.label ? `${fmt.label} / day` : "Active time / day");
+
               let trend: "up" | "down" | "neutral";
               if (change > 0) trend = "up";
               else if (change < 0) trend = "down";
@@ -231,18 +239,20 @@ export function MetricsDetailPage({ theme, onBack }: MetricsDetailPageProps) {
                         <p
                           className={`text-3xl tabular-nums ${theme === "dark" ? "text-white" : "text-gray-900"}`}
                         >
-                          {typeof value === "number" ? value.toFixed(1) : value}
+                          {displayValue}
                         </p>
-                        <span
-                          className={`text-xs font-medium ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}
-                        >
-                          {config.unit}
-                        </span>
+                        {displayUnit && (
+                          <span
+                            className={`text-xs font-medium ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}
+                          >
+                            {displayUnit}
+                          </span>
+                        )}
                       </div>
                       <p
                         className={`text-sm ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}
                       >
-                        {config.label}
+                        {displayLabel}
                       </p>
                     </div>
                   </div>
@@ -274,12 +284,12 @@ export function MetricsDetailPage({ theme, onBack }: MetricsDetailPageProps) {
                     <p
                       className={`text-3xl tabular-nums ${theme === "dark" ? "text-white" : "text-gray-900"}`}
                     >
-                      {weekIdleHours.toFixed(1)}
+                      {weekIdleHours < 1 ? Math.round(weekIdleHours * 60) : weekIdleHours.toFixed(1)}
                     </p>
                     <span
                       className={`text-xs font-medium ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}
                     >
-                      hrs
+                      {weekIdleHours < 1 ? "min" : "hrs"}
                     </span>
                   </div>
                   <p className={`text-sm ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}>
@@ -499,14 +509,14 @@ export function MetricsDetailPage({ theme, onBack }: MetricsDetailPageProps) {
                               theme === "dark" ? "text-gray-200" : "text-gray-800"
                             }`}
                           >
-                            {row.active_hours.toFixed(1)}
+                            {row.active_hours < 1 ? `${Math.round(row.active_hours * 60)}m` : `${row.active_hours.toFixed(1)}h`}
                           </td>
                           <td
                             className={`px-4 py-3 pr-5 text-center align-middle tabular-nums ${
                               theme === "dark" ? "text-gray-200" : "text-gray-800"
                             }`}
                           >
-                            {row.idle_hours.toFixed(1)}
+                            {row.idle_hours < 1 ? `${Math.round(row.idle_hours * 60)}m` : `${row.idle_hours.toFixed(1)}h`}
                           </td>
                         </tr>
                       ))}

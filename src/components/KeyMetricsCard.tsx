@@ -1,6 +1,7 @@
 import { Card } from "./ui/card";
 import { TrendingUp, TrendingDown, Zap, Clock, Keyboard, AlertCircle } from "lucide-react";
 import { PerformanceMetric } from "@/services/api";
+import { formatDurationHours } from "@/utils/durationFormat";
 
 interface KeyMetricsCardProps {
   theme: 'light' | 'dark';
@@ -25,8 +26,8 @@ export function KeyMetricsCard({ theme, onMetricClick, performanceData }: KeyMet
     },
     {
       key: 'daily_active_average',
-      label: "Active Hours per Day",
-      unit: "hrs",
+      label: null as string | null,
+      unit: null as string | null,
       icon: Clock,
       gradient: "from-[#FFD93D] to-[#FFC93D]",
       bgGradient: "from-[#FFD93D]/10 to-[#FFC93D]/5"
@@ -61,8 +62,13 @@ export function KeyMetricsCard({ theme, onMetricClick, performanceData }: KeyMet
         
         const value = metric?.value ?? 0;
         const change = metric?.change_percent ?? 0;
-        
-        // Determine trend based on change_percent
+
+        const isDuration = config.key === "daily_active_average";
+        const fmt = isDuration ? formatDurationHours(value) : null;
+        const displayValue = isDuration ? fmt!.text : `${value.toFixed(1)}`;
+        const displayUnit = config.unit ?? "";
+        const displayLabel = config.label ?? (fmt?.label ? `${fmt.label} / day` : "Active time / day");
+
         let trend: 'up' | 'down' | 'neutral';
         if (change > 0) {
           trend = 'up';
@@ -108,16 +114,15 @@ export function KeyMetricsCard({ theme, onMetricClick, performanceData }: KeyMet
                 </div>
               </div>
 
-              {/* Metric Value */}
               <div className="mb-2">
                 <div className="flex items-baseline gap-1">
-                  <p className={`text-3xl ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{typeof value === 'number' ? value.toFixed(1) : value}</p>
-                  <span className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{config.unit}</span>
+                  <p className={`text-3xl ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{displayValue}</p>
+                  {displayUnit && (
+                    <span className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{displayUnit}</span>
+                  )}
                 </div>
               </div>
-
-              {/* Label */}
-              <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{config.label}</p>
+              <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{displayLabel}</p>
             </div>
           </Card>
         );

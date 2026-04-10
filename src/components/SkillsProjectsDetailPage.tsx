@@ -130,7 +130,7 @@ export function SkillsProjectsDetailPage({ theme, onBack, onProjectClick }: Skil
               Skills & Projects Overview
             </h1>
             <p className={`mt-1 text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-              Active hours in your apps (per project) from activity sync; skills and code from project snapshots
+              App active time per project from activity sync; skills and code from project snapshots
             </p>
           </div>
         </div>
@@ -166,9 +166,11 @@ export function SkillsProjectsDetailPage({ theme, onBack, onProjectClick }: Skil
                   <Clock className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <p className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Active hours</p>
+                  <p className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>Active time</p>
                   <p className={`text-xl tabular-nums ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-                    {(summary?.total_app_time_hours ?? 0).toFixed(1)}h
+                    {(summary?.total_app_time_hours ?? 0) < 1
+                      ? `${Math.round((summary?.total_app_time_hours ?? 0) * 60)} min`
+                      : `${(summary?.total_app_time_hours ?? 0).toFixed(1)}h`}
                   </p>
                 </div>
               </div>
@@ -206,7 +208,7 @@ export function SkillsProjectsDetailPage({ theme, onBack, onProjectClick }: Skil
           <div className="space-y-4">
             <h2 className={`text-2xl ${theme === "dark" ? "text-white" : "text-gray-900"}`}>Skills by time</h2>
             <p className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-              From project skill tracking (all projects combined). Active hours per project are shown below.
+              From project skill tracking (all projects combined). Active time per project is shown below.
             </p>
 
             {skills.length === 0 ? (
@@ -241,7 +243,9 @@ export function SkillsProjectsDetailPage({ theme, onBack, onProjectClick }: Skil
                         />
                       </div>
                       <p className={`text-xs tabular-nums ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                        {skill.duration_hours.toFixed(1)} hours total
+                        {skill.duration_hours < 1
+                          ? `${Math.round(skill.duration_hours * 60)} min total`
+                          : `${skill.duration_hours.toFixed(1)}h total`}
                       </p>
                     </Card>
                   ))}

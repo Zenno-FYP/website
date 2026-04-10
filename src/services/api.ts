@@ -54,18 +54,32 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor - handle errors globally
+// Response interceptor — retry once with a force-refreshed token on 401
 api.interceptors.response.use(
   (response: AxiosResponse) => response,
-  (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid - logout user and clear cache
+  async (error: AxiosError) => {
+    const originalRequest = error.config as typeof error.config & { _retried?: boolean };
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retried
+    ) {
+      originalRequest._retried = true;
+      const { firebaseUser } = useAuthStore.getState();
+      if (firebaseUser) {
+        try {
+          const freshToken = await firebaseUser.getIdToken(true);
+          originalRequest.headers.Authorization = `Bearer ${freshToken}`;
+          return api(originalRequest);
+        } catch {
+          // refresh itself failed — fall through to logout
+        }
+      }
       invalidateCacheOnAuthChange();
       useAuthStore.getState().logout();
     }
-
     return Promise.reject(error);
-  }
+  },
 );
 
 // ============= Performance Metrics Types =============
