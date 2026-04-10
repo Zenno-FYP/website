@@ -538,4 +538,54 @@ export async function fetchPeersSearch(q: string): Promise<PeerCard[]> {
   return (response.data.peers ?? []).map(normalizePeerCard);
 }
 
+/** WebSocket namespace is on the API origin without the `/api/v1` suffix. */
+export function getBackendOriginForSocket(): string {
+  return API_BASE_URL.replace(/\/api\/v\d+$/i, "");
+}
+
+// ============= Chat (REST + used with Socket.IO `/chat`) =============
+
+export interface ChatOtherUser {
+  id: string;
+  name: string;
+  profilePhoto: string | null;
+}
+
+export interface ChatConversationSummary {
+  id: string;
+  other_user: ChatOtherUser;
+  last_message_text: string;
+  last_message_at: string;
+  unread_count: number;
+}
+
+export interface ChatMessageItem {
+  id: string;
+  sender_id: string;
+  body: string;
+  created_at: string;
+  read_at: string | null;
+}
+
+export async function fetchChatConversations(): Promise<ChatConversationSummary[]> {
+  const r = await api.get<{ conversations: ChatConversationSummary[] }>("/chat/conversations");
+  return r.data.conversations ?? [];
+}
+
+export async function openChatWithUser(userId: string): Promise<string> {
+  const r = await api.post<{ conversation_id: string }>("/chat/conversations/with-user", { userId });
+  return r.data.conversation_id;
+}
+
+export async function fetchChatMessages(conversationId: string, before?: string): Promise<ChatMessageItem[]> {
+  const r = await api.get<{ messages: ChatMessageItem[] }>(`/chat/conversations/${conversationId}/messages`, {
+    params: before ? { before } : undefined,
+  });
+  return r.data.messages ?? [];
+}
+
+export async function markChatRead(conversationId: string): Promise<void> {
+  await api.post(`/chat/conversations/${conversationId}/read`);
+}
+
 export default api;

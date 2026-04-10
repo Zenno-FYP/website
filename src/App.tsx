@@ -1,8 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Toaster } from "sonner";
 import { useFirebaseUser, useIsCheckingAuth, useLogout } from "@/stores/useAuthHooks";
 import { useAuthStore } from "@/stores/authStore";
-import { fetchPerformanceMetrics, PerformanceMetricsResponse } from "@/services/api";
+import {
+  fetchPerformanceMetrics,
+  PerformanceMetricsResponse,
+  fetchChatConversations,
+  type ChatConversationSummary,
+} from "@/services/api";
 import { DeveloperTrendsCard } from "./components/DeveloperTrendsCard";
 import { TopAppUsageCard } from "./components/TopAppUsageCard";
 import { TopLanguagesCard } from "./components/TopLanguagesCard";
@@ -24,7 +29,7 @@ import { SettingsPanel } from "./components/SettingsPanel";
 import { Button } from "./components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "./components/ui/dropdown-menu";
-import { Bell, MessageCircle, Home, Bot, User, Settings, Sparkles, LogOut, UserCircle, UsersRound } from "lucide-react";
+import { Bell, MessageCircle, Home, Bot, User, Settings, Sparkles, LogOut, UserCircle, UsersRound, Loader2 } from "lucide-react";
 import { TrendingUp, Target } from "lucide-react";
 
 export default function App() {
@@ -49,7 +54,9 @@ export default function App() {
     | 'appLanguages'
     | 'projectDetail'
   >('dashboard');
-  const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
+  const [chatOpenWithUserId, setChatOpenWithUserId] = useState<string | null>(null);
+  const [headerRecentChats, setHeaderRecentChats] = useState<ChatConversationSummary[]>([]);
+  const [headerChatsLoading, setHeaderChatsLoading] = useState(false);
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [peerProfileUserId, setPeerProfileUserId] = useState<string | null>(null);
   const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetricsResponse | null>(null);
@@ -57,6 +64,19 @@ export default function App() {
   
   // Subscribe to firebaseUser changes from store
   const firebaseUser = useFirebaseUser();
+
+  const loadHeaderChats = useCallback(async () => {
+    if (!firebaseUser) return;
+    setHeaderChatsLoading(true);
+    try {
+      const list = await fetchChatConversations();
+      setHeaderRecentChats(list.slice(0, 8));
+    } catch {
+      setHeaderRecentChats([]);
+    } finally {
+      setHeaderChatsLoading(false);
+    }
+  }, [firebaseUser]);
   const isCheckingAuth = useIsCheckingAuth();
   const logout = useLogout();
 
@@ -126,44 +146,6 @@ export default function App() {
     }
   };
 
-  const recentChats = [
-    { 
-      id: 1, 
-      firstName: "Sarah", 
-      lastName: "Chen",
-      message: "Fix authentication bug", 
-      time: "2 min ago", 
-      isOnline: true,
-      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop"
-    },
-    { 
-      id: 2, 
-      firstName: "Alex", 
-      lastName: "Rivera",
-      message: "Update dashboard UI", 
-      time: "1 hour ago", 
-      isOnline: true,
-      avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop"
-    },
-    { 
-      id: 3, 
-      firstName: "Michael", 
-      lastName: "Thompson",
-      message: "Database optimization", 
-      time: "3 hours ago", 
-      isOnline: false,
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop"
-    },
-    { 
-      id: 4, 
-      firstName: "Emma", 
-      lastName: "Watson",
-      message: "API integration help", 
-      time: "Yesterday", 
-      isOnline: false,
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop"
-    },
-  ];
 
   // Show Auth Page if not authenticated
   if (!isAuthenticated) {
@@ -244,7 +226,7 @@ export default function App() {
               {/* Right Actions */}
               <div className="flex items-center gap-2">
                 {/* Messages Dropdown */}
-                <DropdownMenu>
+                <DropdownMenu onOpenChange={(open) => { if (open) void loadHeaderChats(); }}>
                   <DropdownMenuTrigger asChild>
                     <button className={`relative w-10 h-10 rounded-xl backdrop-blur-xl transition-all duration-300 group flex items-center justify-center ${
                       theme === 'dark'
@@ -274,54 +256,67 @@ export default function App() {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator className={theme === 'dark' ? 'bg-white/10' : 'bg-gray-200'} />
                     <div className="max-h-96 overflow-y-auto px-2 py-1">
-                      {recentChats.map((chat) => (
-                        <DropdownMenuItem 
-                          key={chat.id}
-                          onClick={() => {
-                            setSelectedChatId(chat.id);
-                            setCurrentPage('chats');
-                          }}
-                          className={`p-3 cursor-pointer my-1.5 rounded-lg shadow-sm ${
-                            theme === 'dark'
-                              ? 'hover:bg-white/10 focus:bg-white/10 hover:shadow-md'
-                              : 'hover:bg-gray-100 focus:bg-gray-100 hover:shadow-md bg-white/50'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3 flex-1">
-                            <div className="relative flex-shrink-0">
-                              <Avatar className="w-10 h-10">
-                                <AvatarImage src={chat.avatar} alt={chat.firstName} />
-                                <AvatarFallback className="bg-gradient-to-br from-[#5B6FD8] to-[#7C4DFF] text-white text-sm">
-                                  {chat.firstName.charAt(0)}{chat.lastName.charAt(0)}
+                      {headerChatsLoading ? (
+                        <div className={`flex items-center justify-center gap-2 py-6 text-sm ${
+                          theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                        }`}>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Loading…
+                        </div>
+                      ) : headerRecentChats.length === 0 ? (
+                        <p className={`px-3 py-4 text-center text-sm ${
+                          theme === 'dark' ? 'text-gray-500' : 'text-gray-600'
+                        }`}>
+                          No recent chat
+                        </p>
+                      ) : (
+                        headerRecentChats.map((c) => (
+                          <DropdownMenuItem
+                            key={c.id}
+                            onClick={() => {
+                              setChatOpenWithUserId(c.other_user.id);
+                              setCurrentPage('chats');
+                            }}
+                            className={`p-3 cursor-pointer my-1.5 rounded-lg shadow-sm ${
+                              theme === 'dark'
+                                ? 'hover:bg-white/10 focus:bg-white/10 hover:shadow-md'
+                                : 'hover:bg-gray-100 focus:bg-gray-100 hover:shadow-md bg-white/50'
+                            }`}
+                          >
+                            <div className="flex flex-1 min-w-0 items-center gap-3">
+                              <Avatar className="h-10 w-10 shrink-0">
+                                <AvatarImage src={c.other_user.profilePhoto ?? undefined} alt={c.other_user.name} />
+                                <AvatarFallback className="bg-gradient-to-br from-[#5B6FD8] to-[#7C4DFF] text-sm text-white">
+                                  {c.other_user.name
+                                    .split(' ')
+                                    .map((n) => n[0])
+                                    .join('')
+                                    .slice(0, 2)
+                                    .toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 ${
-                                theme === 'dark' ? 'border-gray-900' : 'border-white'
-                              } ${
-                                chat.isOnline ? 'bg-green-500' : 'bg-gray-400'
-                              }`}></span>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-2 mb-1">
-                                <p className={`font-medium truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                                  {chat.firstName}
+                              <div className="min-w-0 flex-1">
+                                <p className={`truncate font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                                  {c.other_user.name}
                                 </p>
-                                <p className={`text-xs flex-shrink-0 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                                  {chat.time}
+                                <p className={`truncate text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                                  {c.last_message_text || 'Say hello…'}
                                 </p>
                               </div>
-                              <p className={`text-xs truncate ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                                {chat.message}
-                              </p>
+                              {c.unread_count > 0 ? (
+                                <span className="flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full bg-[#5B6FD8] px-1 text-[10px] text-white">
+                                  {c.unread_count > 9 ? '9+' : c.unread_count}
+                                </span>
+                              ) : null}
                             </div>
-                          </div>
-                        </DropdownMenuItem>
-                      ))}
+                          </DropdownMenuItem>
+                        ))
+                      )}
                     </div>
                     <DropdownMenuSeparator className={theme === 'dark' ? 'bg-white/10' : 'bg-gray-200'} />
                     <DropdownMenuItem 
                       onClick={() => {
-                        setSelectedChatId(null);
+                        setChatOpenWithUserId(null);
                         setCurrentPage('chats');
                       }}
                       className={`p-3 cursor-pointer mx-2 my-1 rounded-lg justify-center ${
@@ -636,8 +631,8 @@ export default function App() {
             <ChatsPage
               theme={theme}
               onBack={() => setCurrentPage('dashboard')}
-              initialContacts={recentChats}
-              selectedContactId={selectedChatId || undefined}
+              initialPeerUserId={chatOpenWithUserId}
+              onConsumedInitialPeer={() => setChatOpenWithUserId(null)}
             />
           ) : currentPage === 'peers' ? (
             <PeersPage
@@ -656,6 +651,11 @@ export default function App() {
               onBack={() => {
                 setPeerProfileUserId(null);
                 setCurrentPage('peers');
+              }}
+              onStartChatWithPeer={(userId) => {
+                setPeerProfileUserId(null);
+                setChatOpenWithUserId(userId);
+                setCurrentPage('chats');
               }}
             />
           ) : currentPage === 'profile' ? (

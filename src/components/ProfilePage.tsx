@@ -26,6 +26,7 @@ import {
   Flame,
   TrendingUp,
   Camera,
+  MessageCircle,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { AxiosError } from "axios";
@@ -46,6 +47,8 @@ interface ProfilePageProps {
   /** When set, show that user’s public profile (read-only, server applies their visibility prefs). */
   viewUserId?: string | null;
   backLabel?: string;
+  /** Public profile only: start a direct message with this user. */
+  onStartChatWithPeer?: (userId: string) => void;
 }
 
 const MAX_GLOBAL_VISIBLE = 6;
@@ -165,7 +168,13 @@ function normalizedLanguagePercents(languages: ProfileProjectCard["languages"]):
   return raw.map((x) => ({ ...x, percent: (x.percent / sum) * 100 }));
 }
 
-export function ProfilePage({ theme, onBack, viewUserId = null, backLabel = "Back to Dashboard" }: ProfilePageProps) {
+export function ProfilePage({
+  theme,
+  onBack,
+  viewUserId = null,
+  backLabel = "Back to Dashboard",
+  onStartChatWithPeer,
+}: ProfilePageProps) {
   const firebaseUser = useFirebaseUser();
   const user = useUser();
   const { setUser } = useAuthActions();
@@ -846,9 +855,24 @@ export function ProfilePage({ theme, onBack, viewUserId = null, backLabel = "Bac
                     </>
                   ) : (
                     <>
-                      <h1 className={`text-4xl font-semibold tracking-tight ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-                        {subject.name}
-                      </h1>
+                      <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-3">
+                        <h1
+                          className={`min-w-0 flex-1 text-4xl font-semibold tracking-tight ${theme === "dark" ? "text-white" : "text-gray-900"}`}
+                        >
+                          {subject.name}
+                        </h1>
+                        {isPublicView && viewUserId && onStartChatWithPeer ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => onStartChatWithPeer(viewUserId)}
+                            className="shrink-0 rounded-xl bg-gradient-to-r from-[#5B6FD8] to-[#7C4DFF] text-white hover:opacity-95"
+                          >
+                            <MessageCircle className="mr-2 h-4 w-4" />
+                            Message
+                          </Button>
+                        ) : null}
+                      </div>
                       {subject.email ? (
                         <div className={`flex flex-wrap items-center gap-2 text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
                           <Mail className="h-4 w-4 shrink-0" />
