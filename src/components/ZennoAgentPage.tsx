@@ -1,381 +1,497 @@
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Switch } from "./ui/switch";
-import { Slider } from "./ui/slider";
 import { Badge } from "./ui/badge";
-import { ArrowLeft, Download, Bot, Bell, Volume2, Power, Sparkles, Palette } from "lucide-react";
-import { useState } from "react";
+import {
+  ArrowLeft,
+  Download,
+  Bot,
+  Bell,
+  Power,
+  Sparkles,
+  Palette,
+  Calendar,
+  Brain,
+  Heart,
+  Users,
+  RefreshCw,
+  Check,
+  Loader2,
+  TrendingUp,
+  Target,
+  Clock,
+} from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import {
+  fetchAgentPreferences,
+  updateAgentPreferences,
+  fetchAgentNudgeStats,
+  AgentPreferences,
+  AgentNudgeStats,
+  WorkSchedule,
+  FocusStyle,
+  WellbeingGoal,
+  AgentTone,
+} from "@/services/api";
 
-const tones = [
-  { id: "friendly", label: "Friendly", emoji: "😊", description: "Warm and approachable responses" },
-  { id: "motivational", label: "Motivational", emoji: "💪", description: "Encouraging and energetic" },
-  { id: "professional", label: "Professional", emoji: "💼", description: "Formal and business-like" },
-  { id: "casual", label: "Casual", emoji: "✨", description: "Relaxed and conversational" }
+// ── Option sets ────────────────────────────────────────────────────────────────
+
+const tones: { id: AgentTone; label: string; emoji: string; description: string }[] = [
+  { id: "friendly",      label: "Friendly",      emoji: "😊", description: "Warm and approachable responses" },
+  { id: "motivational",  label: "Motivational",  emoji: "💪", description: "Encouraging and energetic" },
+  { id: "professional",  label: "Professional",  emoji: "💼", description: "Formal and business-like" },
+  { id: "casual",        label: "Casual",        emoji: "✨", description: "Relaxed and conversational" },
 ];
 
+const schedules: { id: WorkSchedule; label: string; emoji: string; description: string }[] = [
+  { id: "morning",   label: "Morning Bird",  emoji: "🌅", description: "Active 6 AM – 4 PM" },
+  { id: "standard",  label: "Standard Day",  emoji: "🏢", description: "Active 8 AM – 8 PM" },
+  { id: "evening",   label: "Evening Shift", emoji: "🌆", description: "Active 11 AM – 10 PM" },
+  { id: "night_owl", label: "Night Owl",     emoji: "🦉", description: "Active 2 PM – 1 AM" },
+];
+
+const focusStyles: { id: FocusStyle; label: string; emoji: string; description: string }[] = [
+  { id: "deep",      label: "Deep Focus",  emoji: "🎯", description: "110-min break reminders" },
+  { id: "moderate",  label: "Moderate",    emoji: "⚖️",  description: "75-min break reminders" },
+  { id: "pomodoro",  label: "Pomodoro",    emoji: "🍅", description: "35-min sprint cycles" },
+];
+
+const wellbeingGoals: { id: WellbeingGoal; label: string; emoji: string; description: string }[] = [
+  { id: "focused",  label: "Stay Focused",     emoji: "🔥", description: "Celebrate deep work, flag distractions" },
+  { id: "burnout",  label: "Prevent Burnout",  emoji: "💚", description: "Prioritise rest and recovery cues" },
+  { id: "habits",   label: "Build Habits",     emoji: "📈", description: "Reference day-level patterns for insight" },
+  { id: "minimal",  label: "Minimal Mode",     emoji: "🤫", description: "Only essential nudges, no fluff" },
+];
+
+// ── Defaults ───────────────────────────────────────────────────────────────────
+
+const defaultPrefs: AgentPreferences = {
+  user_id: "",
+  work_schedule: "standard",
+  focus_style: "moderate",
+  wellbeing_goal: "focused",
+  has_meetings: false,
+  nudge_enabled: true,
+  agent_tone: "motivational",
+};
+
+// ── Component ──────────────────────────────────────────────────────────────────
+
 interface ZennoAgentPageProps {
-  theme: 'light' | 'dark';
+  theme: "light" | "dark";
   onBack: () => void;
 }
 
 export function ZennoAgentPage({ theme, onBack }: ZennoAgentPageProps) {
-  const [selectedTone, setSelectedTone] = useState("motivational");
-  const [playSounds, setPlaySounds] = useState(true);
-  const [limitNotifications, setLimitNotifications] = useState(false);
-  const [shutdownAgent, setShutdownAgent] = useState(false);
-  const [notificationVolume, setNotificationVolume] = useState([70]);
+  const [prefs, setPrefs] = useState<AgentPreferences>(defaultPrefs);
+  const [stats, setStats] = useState<AgentNudgeStats>({ total_nudges: 0, today_nudges: 0, this_week_nudges: 0 });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // ── Fetch data ─────────────────────────────────────────────────────────────
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [fetchedPrefs, fetchedStats] = await Promise.all([
+        fetchAgentPreferences(),
+        fetchAgentNudgeStats(),
+      ]);
+      setPrefs(fetchedPrefs);
+      setStats(fetchedStats);
+    } catch {
+      setError("Failed to load agent data. Check your connection.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  // ── Save helper ────────────────────────────────────────────────────────────
+
+  const save = useCallback(async (patch: Partial<AgentPreferences>) => {
+    setSaving(true);
+    setSaved(false);
+    try {
+      const updated = await updateAgentPreferences(patch);
+      setPrefs(updated);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch {
+      setError("Failed to save. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }, []);
+
+  const handleToneChange = (tone: AgentTone) => save({ agent_tone: tone });
+  const handleScheduleChange = (s: WorkSchedule) => save({ work_schedule: s });
+  const handleFocusChange = (f: FocusStyle) => save({ focus_style: f });
+  const handleGoalChange = (g: WellbeingGoal) => save({ wellbeing_goal: g });
+  const handleMeetingsToggle = (v: boolean) => save({ has_meetings: v });
+  const handleNudgeToggle = (v: boolean) => save({ nudge_enabled: v });
+
+  // ── UI helpers ─────────────────────────────────────────────────────────────
+
+  const dark = theme === "dark";
+  const cardBase = `p-6 rounded-3xl shadow-xl border backdrop-blur-2xl transition-all ${
+    dark ? "bg-[#121218]/80 border-white/10 hover:border-white/20" : "bg-white/80 border-gray-200 hover:border-gray-300"
+  }`;
+
+  function OptionGrid<T extends string>({
+    options,
+    value,
+    onChange,
+  }: {
+    options: { id: T; label: string; emoji: string; description: string }[];
+    value: T;
+    onChange: (v: T) => void;
+  }) {
+    return (
+      <div className="space-y-3">
+        {options.map((opt) => (
+          <div
+            key={opt.id}
+            onClick={() => onChange(opt.id)}
+            className={`p-4 rounded-2xl cursor-pointer transition-all ${
+              value === opt.id
+                ? dark
+                  ? "bg-gradient-to-br from-purple-500/30 to-blue-500/20 border-2 border-purple-500/50 shadow-lg"
+                  : "bg-gradient-to-br from-purple-100 to-blue-50 border-2 border-purple-400 shadow-md"
+                : dark
+                ? "bg-white/5 border border-white/10 hover:bg-white/10"
+                : "bg-gray-50 border border-gray-200 hover:bg-gray-100"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
+                value === opt.id ? "bg-white/20" : dark ? "bg-white/10" : "bg-white"
+              }`}>
+                <span className="text-xl">{opt.emoji}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className={`font-medium text-sm ${dark ? "text-white" : "text-gray-900"}`}>
+                    {opt.label}
+                  </span>
+                  {value === opt.id && (
+                    <Badge className="bg-green-500 text-white border-0 text-xs px-2 py-0">Active</Badge>
+                  )}
+                </div>
+                <p className={`text-xs ${dark ? "text-gray-400" : "text-gray-600"}`}>
+                  {opt.description}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen pb-12 relative">
-      {/* Animated Background Elements */}
+      {/* Background */}
       <div className="fixed inset-0 pointer-events-none z-0 opacity-60">
-        {/* Subtle grid pattern overlay */}
-        {theme === 'dark' && (
+        {dark && (
           <div className="absolute inset-0 opacity-[0.02]" style={{
-            backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-            backgroundSize: '50px 50px'
-          }}></div>
+            backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)",
+            backgroundSize: "50px 50px",
+          }} />
         )}
-        
-        {/* Gradient overlays */}
-        <div className={`absolute inset-0 ${
-          theme === 'dark'
-            ? 'bg-gradient-to-br from-[#1a1a2e]/30 via-transparent to-transparent'
-            : ''
-        }`}></div>
-        
+        <div className={`absolute inset-0 ${dark ? "bg-gradient-to-br from-[#1a1a2e]/30 via-transparent to-transparent" : ""}`} />
         <div className={`absolute top-0 left-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse ${
-          theme === 'dark' 
-            ? 'bg-gradient-to-br from-purple-600/15 to-blue-600/8' 
-            : 'bg-gradient-to-br from-purple-400/8 to-purple-300/4'
-        }`}></div>
+          dark ? "bg-gradient-to-br from-purple-600/15 to-blue-600/8" : "bg-gradient-to-br from-purple-400/8 to-purple-300/4"
+        }`} />
         <div className={`absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse ${
-          theme === 'dark' 
-            ? 'bg-gradient-to-br from-purple-600/15 to-[#7C4DFF]/8' 
-            : 'bg-gradient-to-br from-purple-400/8 to-purple-300/4'
-        }`} style={{ animationDelay: '2s' }}></div>
-        
-        {/* Diagonal accent */}
-        {theme === 'dark' && (
-          <div className="absolute top-0 right-0 w-full h-full">
-            <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br from-purple-600/5 to-transparent rotate-12 transform translate-x-1/3 -translate-y-1/3 blur-2xl"></div>
-          </div>
-        )}
+          dark ? "bg-gradient-to-br from-purple-600/15 to-[#7C4DFF]/8" : "bg-gradient-to-br from-purple-400/8 to-purple-300/4"
+        }`} style={{ animationDelay: "2s" }} />
       </div>
 
       {/* Content */}
       <div className="relative z-10">
         {/* Header */}
         <div className="mb-8">
-        <Button
-          variant="ghost"
-          onClick={onBack}
-          className={`mb-6 rounded-xl transition-all ${
-            theme === 'dark'
-              ? 'hover:bg-white/10 text-gray-300 hover:text-white'
-              : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Dashboard
-        </Button>
-
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br from-[#7C4DFF] to-[#5B6FD8] flex items-center justify-center shadow-xl`}>
-              <Bot className="w-8 h-8 text-white drop-shadow-lg" />
-            </div>
-            <div>
-              <h1 className={`text-3xl mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                Zenno Agent
-              </h1>
-              <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                Configure your AI assistant preferences
-              </p>
-            </div>
-          </div>
-          
-          <Button 
-            className="rounded-xl bg-gradient-to-r from-[#7C4DFF] to-[#5B6FD8] hover:from-[#6B3FEE] hover:to-[#4A5FC7] text-white shadow-lg hover:shadow-xl transition-all"
+          <Button
+            variant="ghost"
+            onClick={onBack}
+            className={`mb-6 rounded-xl transition-all ${
+              dark ? "hover:bg-white/10 text-gray-300 hover:text-white" : "hover:bg-gray-100 text-gray-600 hover:text-gray-900"
+            }`}
           >
-            <Download className="w-4 h-4 mr-2" />
-            Download Agent
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
           </Button>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Agent Tone Settings */}
-        <Card className={`p-6 rounded-3xl shadow-xl border backdrop-blur-2xl transition-all ${
-          theme === 'dark'
-            ? 'bg-[#121218]/80 border-white/10 hover:border-white/20'
-            : 'bg-white/80 border-gray-200 hover:border-gray-300'
-        }`}>
-          <div className="flex items-center gap-3 mb-6">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-              theme === 'dark' ? 'bg-purple-500/20' : 'bg-purple-100'
-            }`}>
-              <Palette className={`w-6 h-6 ${theme === 'dark' ? 'text-purple-400' : 'text-purple-600'}`} />
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#7C4DFF] to-[#5B6FD8] flex items-center justify-center shadow-xl">
+                <Bot className="w-8 h-8 text-white drop-shadow-lg" />
+              </div>
+              <div>
+                <h1 className={`text-3xl mb-1 ${dark ? "text-white" : "text-gray-900"}`}>
+                  Zenno Agent
+                </h1>
+                <p className={dark ? "text-gray-400" : "text-gray-600"}>
+                  Personalize your AI assistant
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
-                Agent Personality
-              </h3>
-              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                Choose how Zenno communicates
-              </p>
+
+            <div className="flex items-center gap-3">
+              {/* Save status indicator */}
+              {saving && (
+                <div className={`flex items-center gap-1.5 text-sm ${dark ? "text-gray-400" : "text-gray-500"}`}>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving…
+                </div>
+              )}
+              {saved && (
+                <div className="flex items-center gap-1.5 text-sm text-green-500">
+                  <Check className="w-4 h-4" />
+                  Saved
+                </div>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={loadData}
+                disabled={loading}
+                className={`rounded-xl ${dark ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              </Button>
+              <Button className="rounded-xl bg-gradient-to-r from-[#7C4DFF] to-[#5B6FD8] hover:from-[#6B3FEE] hover:to-[#4A5FC7] text-white shadow-lg hover:shadow-xl transition-all">
+                <Download className="w-4 h-4 mr-2" />
+                Download Agent
+              </Button>
             </div>
           </div>
 
-          <div className="space-y-3">
-            {tones.map((tone) => (
-              <div
-                key={tone.id}
-                onClick={() => setSelectedTone(tone.id)}
-                className={`p-4 rounded-2xl cursor-pointer transition-all ${
-                  selectedTone === tone.id
-                    ? theme === 'dark'
-                      ? 'bg-gradient-to-br from-purple-500/30 to-blue-500/20 border-2 border-purple-500/50 shadow-lg'
-                      : 'bg-gradient-to-br from-purple-100 to-blue-50 border-2 border-purple-400 shadow-md'
-                    : theme === 'dark'
-                    ? 'bg-white/5 border border-white/10 hover:bg-white/10'
-                    : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                    selectedTone === tone.id
-                      ? 'bg-white/20'
-                      : theme === 'dark'
-                      ? 'bg-white/10'
-                      : 'bg-white'
-                  }`}>
-                    <span className="text-2xl">{tone.emoji}</span>
+          {error && (
+            <div className={`mt-4 p-3 rounded-xl text-sm ${dark ? "bg-red-500/10 text-red-400 border border-red-500/20" : "bg-red-50 text-red-600 border border-red-200"}`}>
+              {error}
+            </div>
+          )}
+        </div>
+
+        {/* ── Row 1: Statistics + Nudge Master Switch ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          {/* Statistics */}
+          <Card className={`lg:col-span-2 p-6 rounded-3xl shadow-xl border backdrop-blur-2xl bg-gradient-to-br ${
+            dark
+              ? "from-[#7C4DFF]/20 to-[#5B6FD8]/10 border-purple-500/20"
+              : "from-purple-50 to-blue-50 border-purple-200"
+          }`}>
+            <div className="flex items-center gap-3 mb-6">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${dark ? "bg-purple-500/20" : "bg-purple-100"}`}>
+                <Sparkles className={`w-6 h-6 ${dark ? "text-purple-400" : "text-purple-600"}`} />
+              </div>
+              <div>
+                <h3 className={dark ? "text-white" : "text-gray-900"}>Agent Statistics</h3>
+                <p className={`text-sm ${dark ? "text-gray-400" : "text-gray-600"}`}>Live nudge metrics</p>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="flex items-center justify-center h-24">
+                <Loader2 className={`w-8 h-8 animate-spin ${dark ? "text-purple-400" : "text-purple-500"}`} />
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-4">
+                {/* Total nudges */}
+                <div className={`p-4 rounded-2xl shadow-sm ${dark ? "bg-white/10" : "bg-white/60"}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className={`w-4 h-4 ${dark ? "text-purple-400" : "text-purple-600"}`} />
+                    <p className={`text-xs ${dark ? "text-gray-400" : "text-gray-600"}`}>All Time</p>
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`font-medium ${
-                        theme === 'dark' ? 'text-white' : 'text-gray-900'
-                      }`}>
-                        {tone.label}
-                      </span>
-                      {selectedTone === tone.id && (
-                        <Badge className="bg-green-500 text-white border-0 text-xs">
-                          Active
-                        </Badge>
-                      )}
-                    </div>
-                    <p className={`text-sm ${
-                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                    }`}>
-                      {tone.description}
+                  <p className={`text-3xl font-bold ${dark ? "text-white" : "text-gray-900"}`}>
+                    {stats.total_nudges.toLocaleString()}
+                  </p>
+                  <p className={`text-xs mt-1 ${dark ? "text-gray-500" : "text-gray-500"}`}>Total Nudges</p>
+                </div>
+
+                {/* Today nudges */}
+                <div className={`p-4 rounded-2xl shadow-sm ${dark ? "bg-white/10" : "bg-white/60"}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className={`w-4 h-4 ${dark ? "text-blue-400" : "text-blue-600"}`} />
+                    <p className={`text-xs ${dark ? "text-gray-400" : "text-gray-600"}`}>Today</p>
+                  </div>
+                  <p className={`text-3xl font-bold ${dark ? "text-white" : "text-gray-900"}`}>
+                    {stats.today_nudges}
+                  </p>
+                  <p className={`text-xs mt-1 ${dark ? "text-gray-500" : "text-gray-500"}`}>Nudges Today</p>
+                </div>
+
+                {/* This week nudges */}
+                <div className={`p-4 rounded-2xl shadow-sm ${dark ? "bg-white/10" : "bg-white/60"}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className={`w-4 h-4 ${dark ? "text-green-400" : "text-green-600"}`} />
+                    <p className={`text-xs ${dark ? "text-gray-400" : "text-gray-600"}`}>This Week</p>
+                  </div>
+                  <p className={`text-3xl font-bold ${dark ? "text-white" : "text-gray-900"}`}>
+                    {stats.this_week_nudges}
+                  </p>
+                  <p className={`text-xs mt-1 ${dark ? "text-gray-500" : "text-gray-500"}`}>Nudges This Week</p>
+                </div>
+              </div>
+            )}
+          </Card>
+
+          {/* Quick controls */}
+          <Card className={cardBase}>
+            <div className="flex items-center gap-3 mb-6">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${dark ? "bg-blue-500/20" : "bg-blue-100"}`}>
+                <Bell className={`w-6 h-6 ${dark ? "text-blue-400" : "text-blue-600"}`} />
+              </div>
+              <div>
+                <h3 className={dark ? "text-white" : "text-gray-900"}>Controls</h3>
+                <p className={`text-sm ${dark ? "text-gray-400" : "text-gray-600"}`}>Quick settings</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {/* Nudge master switch */}
+              <div className={`flex items-center justify-between p-4 rounded-2xl ${
+                !prefs.nudge_enabled
+                  ? dark ? "bg-red-500/10 border-2 border-red-500/30" : "bg-red-50 border-2 border-red-200"
+                  : dark ? "bg-white/5 border border-white/10" : "bg-gray-50 border border-gray-200"
+              }`}>
+                <div className="flex items-center gap-3">
+                  <Power className={`w-5 h-5 ${!prefs.nudge_enabled ? "text-red-500" : dark ? "text-gray-400" : "text-gray-600"}`} />
+                  <div>
+                    <p className={`font-medium text-sm ${!prefs.nudge_enabled ? "text-red-500" : dark ? "text-white" : "text-gray-900"}`}>
+                      Nudges {prefs.nudge_enabled ? "Enabled" : "Disabled"}
+                    </p>
+                    <p className={`text-xs ${!prefs.nudge_enabled ? "text-red-500/80" : dark ? "text-gray-400" : "text-gray-600"}`}>
+                      {prefs.nudge_enabled ? "Agent is running" : "All nudges are off"}
                     </p>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        {/* Statistics Card */}
-        <Card className={`p-6 rounded-3xl shadow-xl border backdrop-blur-2xl transition-all ${
-          theme === 'dark'
-            ? 'bg-gradient-to-br from-[#7C4DFF]/20 to-[#5B6FD8]/10 border-purple-500/20'
-            : 'bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200'
-        }`}>
-          <div className="flex items-center gap-3 mb-6">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-              theme === 'dark' ? 'bg-purple-500/20' : 'bg-purple-100'
-            }`}>
-              <Sparkles className={`w-6 h-6 ${theme === 'dark' ? 'text-purple-400' : 'text-purple-600'}`} />
-            </div>
-            <div>
-              <h3 className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
-                Agent Statistics
-              </h3>
-              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                Performance metrics
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className={`p-4 rounded-2xl col-span-2 shadow-sm ${
-              theme === 'dark' ? 'bg-white/10' : 'bg-white/60'
-            }`}>
-              <p className={`text-sm mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                Total Nudges
-              </p>
-              <p className={`text-2xl mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                1,247
-              </p>
-              <div className={`flex items-center justify-between pt-3 border-t ${
-                theme === 'dark' ? 'border-white/10' : 'border-gray-200'
-              }`}>
-                <span className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Today
-                </span>
-                <span className={`text-lg ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                  47
-                </span>
-              </div>
-            </div>
-            <div className={`p-4 rounded-2xl shadow-sm ${
-              theme === 'dark' ? 'bg-white/10' : 'bg-white/60'
-            }`}>
-              <p className={`text-sm mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                Avg Response Time
-              </p>
-              <p className={`text-2xl ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                15 min
-              </p>
-            </div>
-            <div className={`p-4 rounded-2xl shadow-sm ${
-              theme === 'dark' ? 'bg-white/10' : 'bg-white/60'
-            }`}>
-              <p className={`text-sm mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                Success Rate
-              </p>
-              <p className={`text-2xl ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                94%
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        {/* Notification Settings */}
-        <Card className={`p-6 rounded-3xl shadow-xl border backdrop-blur-2xl transition-all ${
-          theme === 'dark'
-            ? 'bg-[#121218]/80 border-white/10 hover:border-white/20'
-            : 'bg-white/80 border-gray-200 hover:border-gray-300'
-        }`}>
-          <div className="flex items-center gap-3 mb-6">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-              theme === 'dark' ? 'bg-blue-500/20' : 'bg-blue-100'
-            }`}>
-              <Bell className={`w-6 h-6 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`} />
-            </div>
-            <div>
-              <h3 className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
-                Notifications
-              </h3>
-              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                Manage alert preferences
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-5">
-            {/* Play Sounds */}
-            <div className={`flex items-center justify-between p-4 rounded-2xl shadow-sm ${
-              theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'
-            }`}>
-              <div className="flex items-center gap-3">
-                <Volume2 className={`w-5 h-5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`} />
-                <div>
-                  <p className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                    Play Sounds
-                  </p>
-                  <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Audio alerts for notifications
-                  </p>
-                </div>
-              </div>
-              <Switch
-                checked={playSounds}
-                onCheckedChange={setPlaySounds}
-              />
-            </div>
-
-            {/* Notification Volume */}
-            {playSounds && (
-              <div className={`p-4 rounded-2xl shadow-sm ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}>
-                <div className="flex items-center justify-between mb-3">
-                  <p className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                    Notification Volume
-                  </p>
-                  <span className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                    {notificationVolume[0]}%
-                  </span>
-                </div>
-                <Slider
-                  value={notificationVolume}
-                  onValueChange={setNotificationVolume}
-                  max={100}
-                  step={1}
-                  className="w-full"
+                <Switch
+                  checked={prefs.nudge_enabled}
+                  onCheckedChange={handleNudgeToggle}
+                  disabled={saving || loading}
                 />
               </div>
+
+              {/* Meetings toggle */}
+              <div className={`flex items-center justify-between p-4 rounded-2xl ${dark ? "bg-white/5 border border-white/10" : "bg-gray-50 border border-gray-200"}`}>
+                <div className="flex items-center gap-3">
+                  <Users className={`w-5 h-5 ${dark ? "text-gray-400" : "text-gray-600"}`} />
+                  <div>
+                    <p className={`font-medium text-sm ${dark ? "text-white" : "text-gray-900"}`}>
+                      Frequent Meetings
+                    </p>
+                    <p className={`text-xs ${dark ? "text-gray-400" : "text-gray-600"}`}>
+                      Suppresses nudges during calls
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={prefs.has_meetings}
+                  onCheckedChange={handleMeetingsToggle}
+                  disabled={saving || loading}
+                />
+              </div>
+
+              {prefs.updatedAt && (
+                <p className={`text-xs text-center ${dark ? "text-gray-600" : "text-gray-400"}`}>
+                  Last updated {new Date(prefs.updatedAt).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+          </Card>
+        </div>
+
+        {/* ── Row 2: Personalization ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Work Schedule */}
+          <Card className={cardBase}>
+            <div className="flex items-center gap-3 mb-6">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${dark ? "bg-orange-500/20" : "bg-orange-100"}`}>
+                <Calendar className={`w-6 h-6 ${dark ? "text-orange-400" : "text-orange-600"}`} />
+              </div>
+              <div>
+                <h3 className={dark ? "text-white" : "text-gray-900"}>Work Schedule</h3>
+                <p className={`text-sm ${dark ? "text-gray-400" : "text-gray-600"}`}>Sets your active hours & quiet window</p>
+              </div>
+            </div>
+            {loading ? (
+              <div className="flex justify-center py-8"><Loader2 className={`w-6 h-6 animate-spin ${dark ? "text-gray-500" : "text-gray-400"}`} /></div>
+            ) : (
+              <OptionGrid options={schedules} value={prefs.work_schedule} onChange={handleScheduleChange} />
             )}
+          </Card>
 
-            {/* Limit Notifications */}
-            <div className={`flex items-center justify-between p-4 rounded-2xl shadow-sm ${
-              theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'
-            }`}>
-              <div className="flex items-center gap-3">
-                <Bell className={`w-5 h-5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`} />
-                <div>
-                  <p className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                    Limit Notifications
-                  </p>
-                  <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Reduce notification frequency
-                  </p>
-                </div>
+          {/* Focus Style */}
+          <Card className={cardBase}>
+            <div className="flex items-center gap-3 mb-6">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${dark ? "bg-cyan-500/20" : "bg-cyan-100"}`}>
+                <Brain className={`w-6 h-6 ${dark ? "text-cyan-400" : "text-cyan-600"}`} />
               </div>
-              <Switch
-                checked={limitNotifications}
-                onCheckedChange={setLimitNotifications}
-              />
+              <div>
+                <h3 className={dark ? "text-white" : "text-gray-900"}>Focus Style</h3>
+                <p className={`text-sm ${dark ? "text-gray-400" : "text-gray-600"}`}>Tunes break reminders & flow streaks</p>
+              </div>
             </div>
+            {loading ? (
+              <div className="flex justify-center py-8"><Loader2 className={`w-6 h-6 animate-spin ${dark ? "text-gray-500" : "text-gray-400"}`} /></div>
+            ) : (
+              <OptionGrid options={focusStyles} value={prefs.focus_style} onChange={handleFocusChange} />
+            )}
+          </Card>
+        </div>
 
-            {/* Shutdown Agent */}
-            <div className={`flex items-center justify-between p-4 rounded-2xl border-2 shadow-sm ${
-              shutdownAgent
-                ? theme === 'dark'
-                  ? 'bg-red-500/10 border-red-500/30'
-                  : 'bg-red-50 border-red-200'
-                : theme === 'dark'
-                ? 'bg-white/5 border-transparent'
-                : 'bg-gray-50 border-transparent'
-            }`}>
-              <div className="flex items-center gap-3">
-                <Power className={`w-5 h-5 ${
-                  shutdownAgent
-                    ? 'text-red-500'
-                    : theme === 'dark'
-                    ? 'text-gray-400'
-                    : 'text-gray-600'
-                }`} />
-                <div>
-                  <p className={`font-medium ${
-                    shutdownAgent
-                      ? 'text-red-500'
-                      : theme === 'dark'
-                      ? 'text-white'
-                      : 'text-gray-900'
-                  }`}>
-                    Shutdown Agent
-                  </p>
-                  <p className={`text-xs ${
-                    shutdownAgent
-                      ? 'text-red-500/80'
-                      : theme === 'dark'
-                      ? 'text-gray-400'
-                      : 'text-gray-600'
-                  }`}>
-                    Blocks all nudges from Zenno Agent
-                  </p>
-                </div>
+        {/* ── Row 3: Wellbeing + Agent Tone ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Wellbeing Goal */}
+          <Card className={cardBase}>
+            <div className="flex items-center gap-3 mb-6">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${dark ? "bg-green-500/20" : "bg-green-100"}`}>
+                <Heart className={`w-6 h-6 ${dark ? "text-green-400" : "text-green-600"}`} />
               </div>
-              <Switch
-                checked={shutdownAgent}
-                onCheckedChange={setShutdownAgent}
-              />
+              <div>
+                <h3 className={dark ? "text-white" : "text-gray-900"}>Wellbeing Goal</h3>
+                <p className={`text-sm ${dark ? "text-gray-400" : "text-gray-600"}`}>Sets AI nudge persona & frequency</p>
+              </div>
             </div>
-          </div>
-        </Card>
-      </div>
+            {loading ? (
+              <div className="flex justify-center py-8"><Loader2 className={`w-6 h-6 animate-spin ${dark ? "text-gray-500" : "text-gray-400"}`} /></div>
+            ) : (
+              <OptionGrid options={wellbeingGoals} value={prefs.wellbeing_goal} onChange={handleGoalChange} />
+            )}
+          </Card>
+
+          {/* Agent Tone */}
+          <Card className={cardBase}>
+            <div className="flex items-center gap-3 mb-6">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${dark ? "bg-purple-500/20" : "bg-purple-100"}`}>
+                <Palette className={`w-6 h-6 ${dark ? "text-purple-400" : "text-purple-600"}`} />
+              </div>
+              <div>
+                <h3 className={dark ? "text-white" : "text-gray-900"}>Agent Personality</h3>
+                <p className={`text-sm ${dark ? "text-gray-400" : "text-gray-600"}`}>How Zenno communicates with you</p>
+              </div>
+            </div>
+            {loading ? (
+              <div className="flex justify-center py-8"><Loader2 className={`w-6 h-6 animate-spin ${dark ? "text-gray-500" : "text-gray-400"}`} /></div>
+            ) : (
+              <OptionGrid options={tones} value={prefs.agent_tone} onChange={handleToneChange} />
+            )}
+          </Card>
+        </div>
+
+        {/* Sync hint */}
+        <p className={`mt-6 text-center text-xs ${dark ? "text-gray-600" : "text-gray-400"}`}>
+          Changes save instantly and are picked up by the desktop agent within 5 minutes.
+        </p>
       </div>
     </div>
   );
