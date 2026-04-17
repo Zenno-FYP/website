@@ -559,6 +559,65 @@ export function getBackendOriginForSocket(): string {
   return API_BASE_URL.replace(/\/api\/v\d+$/i, "");
 }
 
+// ============= Zenno Agent Types =============
+
+export type WorkSchedule = 'morning' | 'standard' | 'evening' | 'night_owl';
+export type FocusStyle = 'deep' | 'moderate' | 'pomodoro';
+export type WellbeingGoal = 'focused' | 'burnout' | 'habits' | 'minimal';
+export type AgentTone = 'friendly' | 'motivational' | 'professional' | 'casual';
+
+export interface AgentPreferences {
+  user_id: string;
+  work_schedule: WorkSchedule;
+  focus_style: FocusStyle;
+  wellbeing_goal: WellbeingGoal;
+  has_meetings: boolean;
+  nudge_enabled: boolean;
+  agent_tone: AgentTone;
+  updatedAt?: string;
+}
+
+export interface UpdateAgentPreferencesBody {
+  work_schedule?: WorkSchedule;
+  focus_style?: FocusStyle;
+  wellbeing_goal?: WellbeingGoal;
+  has_meetings?: boolean;
+  nudge_enabled?: boolean;
+  agent_tone?: AgentTone;
+}
+
+export interface AgentNudgeStats {
+  total_nudges: number;
+  today_nudges: number;
+  this_week_nudges: number;
+}
+
+// ============= Zenno Agent API =============
+
+export async function fetchAgentPreferences(): Promise<AgentPreferences> {
+  const response = await api.get<{ success: boolean; data: AgentPreferences }>(
+    '/agent/preferences',
+  );
+  return response.data.data;
+}
+
+export async function updateAgentPreferences(
+  body: UpdateAgentPreferencesBody,
+): Promise<AgentPreferences> {
+  const response = await api.put<{ success: boolean; data: AgentPreferences }>(
+    '/agent/preferences',
+    body,
+  );
+  return response.data.data;
+}
+
+export async function fetchAgentNudgeStats(): Promise<AgentNudgeStats> {
+  const response = await api.get<{ success: boolean; data: AgentNudgeStats }>(
+    '/agent/nudges/stats',
+  );
+  return response.data.data;
+}
+
 // ============= Chat (REST + used with Socket.IO `/chat`) =============
 
 export interface ChatOtherUser {
