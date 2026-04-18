@@ -110,8 +110,12 @@ export interface PerformanceMetricsResponse {
 }
 
 // ============= Performance Metrics API =============
-export async function fetchPerformanceMetrics(): Promise<PerformanceMetricsResponse> {
-  const response = await api.get<PerformanceMetricsResponse>('/dashboard/performance-metrics');
+export async function fetchPerformanceMetrics(
+  period: 'current_week' | 'previous_week' = 'current_week',
+): Promise<PerformanceMetricsResponse> {
+  const response = await api.get<PerformanceMetricsResponse>('/dashboard/performance-metrics', {
+    params: period !== 'current_week' ? { period } : undefined,
+  });
   return response.data;
 }
 

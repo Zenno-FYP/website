@@ -13,6 +13,7 @@ import { TopLanguagesCard } from "@/components/TopLanguagesCard";
 import { ZennoAgentCard } from "@/components/ZennoAgentCard";
 import { StrongestSkillsCard } from "@/components/StrongestSkillsCard";
 import { RecentProjectsCard } from "@/components/RecentProjectsCard";
+import { type WeekPeriod } from "@/components/WeekToggle";
 
 interface DashboardPageProps {
   theme: "light" | "dark";
@@ -21,37 +22,51 @@ interface DashboardPageProps {
 export function DashboardPage({ theme }: DashboardPageProps) {
   const navigate = useNavigate();
   const firebaseUser = useFirebaseUser();
+  const [period, setPeriod] = useState<WeekPeriod>("current_week");
   const [performanceMetrics, setPerformanceMetrics] =
     useState<PerformanceMetricsResponse | null>(null);
+  const [metricsLoading, setMetricsLoading] = useState(false);
 
   useEffect(() => {
     if (!firebaseUser) return;
     let cancelled = false;
+    setMetricsLoading(true);
     (async () => {
       try {
-        const data = await fetchPerformanceMetrics();
+        const data = await fetchPerformanceMetrics(period);
         if (!cancelled) setPerformanceMetrics(data);
       } catch (error) {
         console.error("Failed to fetch performance metrics:", error);
+      } finally {
+        if (!cancelled) setMetricsLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [firebaseUser]);
+  }, [firebaseUser, period]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
       {/* Left Section */}
       <div className="lg:col-span-8 space-y-6">
         <WelcomeBanner theme={theme} />
-        <KeyMetricsCard
-          theme={theme}
-          onMetricClick={() => navigate("/analytics/metrics")}
-          performanceData={performanceMetrics?.performance_summary}
-        />
-        <DeveloperTrendsCard
-          theme={theme}
-          usageTrendData={performanceMetrics?.usage_trend_graph}
-        />
+
+        <div className={metricsLoading ? "opacity-60 pointer-events-none transition-opacity" : "transition-opacity"}>
+          <KeyMetricsCard
+            theme={theme}
+            onMetricClick={() => navigate("/analytics/metrics")}
+            performanceData={performanceMetrics?.performance_summary}
+          />
+        </div>
+
+        <div className={metricsLoading ? "opacity-60 pointer-events-none transition-opacity" : "transition-opacity"}>
+          <DeveloperTrendsCard
+            theme={theme}
+            usageTrendData={performanceMetrics?.usage_trend_graph}
+            period={period}
+            onPeriodChange={setPeriod}
+          />
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <TopAppUsageCard
             theme={theme}
