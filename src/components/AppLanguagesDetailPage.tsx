@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { ArrowLeft, ChevronDown, ChevronUp, Clock, Cpu, Code2, FileCode, Activity } from "lucide-react";
@@ -15,7 +15,7 @@ import {
   YAxis,
 } from "recharts";
 import { AxiosError } from "axios";
-import { fetchToolUsageDetail, ToolUsageDetailResponse } from "@/services/api";
+import { fetchToolUsageDetail, ToolUsageDetailResponse, AppDetailPeriod } from "@/services/api";
 import { handleApiError } from "@/services/errorHandler";
 import { useFirebaseUser } from "@/stores/useAuthHooks";
 
@@ -91,19 +91,51 @@ function formatLoc(n: number): string {
 
 const PREVIEW_LIMIT = 5;
 
+const PERIOD_OPTIONS: { value: AppDetailPeriod; label: string; short: string }[] = [
+  { value: "week",     label: "This week",    short: "7d"    },
+  { value: "month",    label: "Last month",   short: "30d"   },
+  { value: "90days",   label: "Last 90 days", short: "90d"   },
+  { value: "6months",  label: "Last 6 months",short: "6mo"   },
+];
+
+function priorLabel(period: AppDetailPeriod): string {
+  switch (period) {
+    case "month":   return "prior month";
+    case "90days":  return "prior 90 days";
+    case "6months": return "prior 6 months";
+    default:        return "prior week";
+  }
+}
+
 export function AppLanguagesDetailPage({ theme, onBack }: AppLanguagesDetailPageProps) {
   const firebaseUser = useFirebaseUser();
-  const [data, setData] = useState<ToolUsageDetailResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [period, setPeriod]             = useState<AppDetailPeriod>("week");
+  const [periodOpen, setPeriodOpen]     = useState(false);
+  const [data, setData]                 = useState<ToolUsageDetailResponse | null>(null);
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState<string | null>(null);
   const [appsExpanded, setAppsExpanded] = useState(false);
   const [languagesExpanded, setLanguagesExpanded] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!periodOpen) return;
+    function handle(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setPeriodOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [periodOpen]);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetchToolUsageDetail()
+    setAppsExpanded(false);
+    fetchToolUsageDetail(period)
       .then((res) => {
         if (!cancelled) setData(res);
       })
@@ -121,7 +153,7 @@ export function AppLanguagesDetailPage({ theme, onBack }: AppLanguagesDetailPage
     return () => {
       cancelled = true;
     };
-  }, [firebaseUser?.uid]);
+  }, [firebaseUser?.uid, period]);
 
   const gridBorder =
     theme === "dark" ? "border-white/10 bg-gray-800/50" : "border-white/60 bg-white/50";
@@ -149,9 +181,11 @@ export function AppLanguagesDetailPage({ theme, onBack }: AppLanguagesDetailPage
     boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
   };
 
+  const selectedPeriod = PERIOD_OPTIONS.find((p) => p.value === period)!;
+
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button
             onClick={onBack}
@@ -170,20 +204,63 @@ export function AppLanguagesDetailPage({ theme, onBack }: AppLanguagesDetailPage
               Apps & Languages Analytics
             </h1>
             <p className={`mt-1 text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-              Last 7 days of active time in apps from synced activity; languages from your project code snapshots
+              {selectedPeriod.label} of app activity · languages are all-time from project snapshots
             </p>
           </div>
         </div>
+
+        {/* Period dropdown */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setPeriodOpen((o) => !o)}
+            className={`flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium backdrop-blur-xl transition-all ${
+              theme === "dark"
+                ? "border-white/10 bg-white/5 text-white hover:bg-white/10"
+                : "border-white/60 bg-white/50 text-gray-800 hover:bg-white/70"
+            }`}
+          >
+            {selectedPeriod.label}
+            <ChevronDown className={`h-4 w-4 transition-transform ${periodOpen ? "rotate-180" : ""}`} />
+          </button>
+          {periodOpen && (
+            <div
+              className={`absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-xl border shadow-xl backdrop-blur-2xl ${
+                theme === "dark"
+                  ? "border-white/10 bg-gray-900/90"
+                  : "border-white/60 bg-white/90"
+              }`}
+            >
+              {PERIOD_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => { setPeriod(opt.value); setPeriodOpen(false); }}
+                  className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
+                    period === opt.value
+                      ? theme === "dark"
+                        ? "bg-white/10 text-white"
+                        : "bg-gray-100 text-gray-900"
+                      : theme === "dark"
+                        ? "text-gray-300 hover:bg-white/5"
+                        : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {loading && (
+      {loading && !data && (
         <p className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>Loading…</p>
       )}
       {error && (
         <p className={theme === "dark" ? "text-red-400" : "text-red-600"}>{error}</p>
       )}
 
-      {!loading && !error && data && (
+      {!error && data && (
+        <div className={`transition-opacity duration-200 ${loading ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
         <>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <Card className={`rounded-2xl border p-5 shadow-lg backdrop-blur-2xl transition-all hover:shadow-xl ${gridBorder}`}>
@@ -193,11 +270,16 @@ export function AppLanguagesDetailPage({ theme, onBack }: AppLanguagesDetailPage
                 </div>
                 <div>
                   <p className={`mb-0.5 text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                    Active time (7d)
+                    Active time ({selectedPeriod.short})
                   </p>
                   <p className={`text-2xl tabular-nums ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
                     {data.top_apps.total_usage_hours.toFixed(1)}h
                   </p>
+                  {data.vs_prior_period_percent !== undefined && (
+                    <p className={`mt-0.5 text-xs tabular-nums ${data.vs_prior_period_percent >= 0 ? (theme === "dark" ? "text-green-400" : "text-green-700") : (theme === "dark" ? "text-red-400" : "text-red-600")}`}>
+                      {data.vs_prior_period_percent >= 0 ? "+" : ""}{data.vs_prior_period_percent.toFixed(0)}% vs {priorLabel(period)}
+                    </p>
+                  )}
                 </div>
               </div>
             </Card>
@@ -266,7 +348,7 @@ export function AppLanguagesDetailPage({ theme, onBack }: AppLanguagesDetailPage
                     Usage by category
                   </h3>
                   <p className={`mt-0.5 text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                    Grouped from app names (rules on the server). Uncategorized time falls under Other.
+                    {selectedPeriod.label} · grouped by inferred category
                   </p>
                 </div>
                 {pieData.length === 0 ? (
@@ -305,26 +387,12 @@ export function AppLanguagesDetailPage({ theme, onBack }: AppLanguagesDetailPage
                 <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <h3 className={`text-lg ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-                      Total app hours by day
+                      {period === "week" ? "Total app hours by day" : period === "6months" ? "Total app hours by month" : "Total app hours by week"}
                     </h3>
                     <p className={`mt-0.5 text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
                       Sum of all apps, all projects
                     </p>
                   </div>
-                  <span
-                    className={`rounded-lg px-2.5 py-1 text-xs font-medium tabular-nums ${
-                      data.top_apps.usage_increase_from_yesterday_percent >= 0
-                        ? theme === "dark"
-                          ? "bg-green-500/20 text-green-400"
-                          : "bg-green-100 text-green-800"
-                        : theme === "dark"
-                          ? "bg-red-500/20 text-red-400"
-                          : "bg-red-100 text-red-800"
-                    }`}
-                  >
-                    {data.top_apps.usage_increase_from_yesterday_percent >= 0 ? "+" : ""}
-                    {data.top_apps.usage_increase_from_yesterday_percent.toFixed(0)}% vs yesterday
-                  </span>
                 </div>
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={daily}>
@@ -393,7 +461,7 @@ export function AppLanguagesDetailPage({ theme, onBack }: AppLanguagesDetailPage
                                 }`}
                               >
                                 {app.change_percent >= 0 ? "+" : ""}
-                                {app.change_percent.toFixed(0)}% vs prior week
+                                {app.change_percent.toFixed(0)}% vs {priorLabel(period)}
                               </span>
                             </div>
                             <div className={`text-2xl font-semibold tabular-nums ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
@@ -401,7 +469,7 @@ export function AppLanguagesDetailPage({ theme, onBack }: AppLanguagesDetailPage
                             </div>
                           </div>
                           <p className={`mb-3 text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                            {app.percent_of_total.toFixed(1)}% of your active time this week
+                            {app.percent_of_total.toFixed(1)}% of your active time ({selectedPeriod.short})
                           </p>
                           <div className={`h-2.5 overflow-hidden rounded-full ${theme === "dark" ? "bg-gray-700/50" : "bg-gray-200"}`}>
                             <div
@@ -547,6 +615,7 @@ export function AppLanguagesDetailPage({ theme, onBack }: AppLanguagesDetailPage
             </Card>
           </div>
         </>
+        </div>
       )}
     </div>
   );

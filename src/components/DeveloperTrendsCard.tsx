@@ -3,15 +3,18 @@ import { Badge } from "./ui/badge";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { useState, useMemo } from "react";
 import { UsageTrendDay } from "@/services/api";
+import { WeekToggle, WeekPeriod } from "./WeekToggle";
 
 interface DeveloperTrendsCardProps {
   theme: 'light' | 'dark';
   usageTrendData?: UsageTrendDay[];
+  period: WeekPeriod;
+  onPeriodChange: (period: WeekPeriod) => void;
 }
 
 type MetricFilter = "all" | "flow" | "debugging" | "research" | "communication" | "distracted";
 
-export function DeveloperTrendsCard({ theme, usageTrendData }: DeveloperTrendsCardProps) {
+export function DeveloperTrendsCard({ theme, usageTrendData, period, onPeriodChange }: DeveloperTrendsCardProps) {
   const [metricFilter, setMetricFilter] = useState<MetricFilter>("all");
 
   const chartData = useMemo(() => {
@@ -53,9 +56,9 @@ export function DeveloperTrendsCard({ theme, usageTrendData }: DeveloperTrendsCa
           ? 'bg-gradient-to-br from-purple-600/10 to-transparent'
           : 'bg-gradient-to-br from-[#5B6FD8]/5 to-transparent'
       }`}></div>
-      <div className="flex items-center justify-between mb-6 relative z-10">
+      <div className="flex items-start justify-between mb-6 relative z-10">
         <div>
-          <h3 className={`mb-1 font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Usage Trend</h3>
+          <h3 className={`mb-2 font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Developer Trends</h3>
           <div className="flex items-center gap-3 flex-wrap">
             <Badge 
               variant="outline" 
@@ -137,6 +140,7 @@ export function DeveloperTrendsCard({ theme, usageTrendData }: DeveloperTrendsCa
             </Badge>
           </div>
         </div>
+        <WeekToggle period={period} onChange={onPeriodChange} theme={theme} />
       </div>
       
       <div className="relative mt-4 z-10">
