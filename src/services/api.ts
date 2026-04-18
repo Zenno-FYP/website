@@ -132,15 +132,21 @@ export interface DailyBehaviorMetrics {
   total_mouse_movement_distance: number;
 }
 
+export type DetailPeriod = 'week' | 'month' | '90days' | '6months';
+
 export interface PerformanceMetricsDetailResponse {
   period: string;
   performance_summary: PerformanceMetricsResponse['performance_summary'];
   daily_series: DailyBehaviorMetrics[];
+  usage_trend_graph: UsageTrendDay[];
 }
 
-export async function fetchPerformanceMetricsDetail(): Promise<PerformanceMetricsDetailResponse> {
+export async function fetchPerformanceMetricsDetail(
+  period: DetailPeriod = 'week',
+): Promise<PerformanceMetricsDetailResponse> {
   const response = await api.get<PerformanceMetricsDetailResponse>(
     '/dashboard/performance-metrics-detail',
+    { params: { period } },
   );
   return response.data;
 }
