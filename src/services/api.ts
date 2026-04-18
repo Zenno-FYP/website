@@ -201,16 +201,20 @@ export interface AppCategoryUsage {
   percent_of_total: number;
 }
 
-/** Apps & languages detail: expanded lists + 7-day daily app hours. */
+/** Apps & languages detail: expanded lists + grouped app-hours chart. */
 export interface ToolUsageDetailResponse {
   period: string;
   unique_apps_count: number;
+  vs_prior_period_percent: number;
   /** Inferred from app names (server-side rules). */
   category_breakdown: AppCategoryUsage[];
   daily_app_usage: DailyAppUsage[];
   top_apps: TopAppsResponse;
+  /** All-time from project code snapshots — unaffected by period filter. */
   language_distribution: LanguageDistribution;
 }
+
+export type AppDetailPeriod = "week" | "month" | "90days" | "6months";
 
 // ============= Tool Usage API =============
 export async function fetchToolUsage(): Promise<ToolUsageResponse> {
@@ -218,8 +222,8 @@ export async function fetchToolUsage(): Promise<ToolUsageResponse> {
   return response.data;
 }
 
-export async function fetchToolUsageDetail(): Promise<ToolUsageDetailResponse> {
-  const response = await api.get<ToolUsageDetailResponse>('/dashboard/tool-usage-detail');
+export async function fetchToolUsageDetail(period: AppDetailPeriod = "week"): Promise<ToolUsageDetailResponse> {
+  const response = await api.get<ToolUsageDetailResponse>('/dashboard/tool-usage-detail', { params: { period } });
   return response.data;
 }
 
