@@ -146,7 +146,32 @@ export function PeersPage({ theme, onBack, onSelectPeer }: PeersPageProps) {
       {error && <p className={theme === "dark" ? "text-red-400" : "text-red-600"}>{error}</p>}
 
       {loading && !peers.length ? (
-        <p className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>Loading developers…</p>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className={`rounded-2xl border p-5 animate-pulse ${
+                theme === "dark"
+                  ? "border-white/10 bg-white/5"
+                  : "border-gray-200 bg-white/60"
+              }`}
+            >
+              <div className="flex gap-4">
+                <div className={`w-14 h-14 rounded-full shrink-0 ${theme === "dark" ? "bg-white/10" : "bg-gray-200"}`} />
+                <div className="flex-1 space-y-2 py-1">
+                  <div className={`h-4 rounded w-2/5 ${theme === "dark" ? "bg-white/10" : "bg-gray-200"}`} />
+                  <div className={`h-3 rounded w-4/5 ${theme === "dark" ? "bg-white/10" : "bg-gray-200"}`} />
+                  <div className={`h-3 rounded w-3/5 ${theme === "dark" ? "bg-white/10" : "bg-gray-200"}`} />
+                  <div className="flex gap-1.5 pt-1">
+                    {[40, 56, 48].map((w) => (
+                      <div key={w} className={`h-5 rounded-full ${theme === "dark" ? "bg-white/10" : "bg-gray-200"}`} style={{ width: w }} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : null}
 
       {!loading && peers.length === 0 ? (
