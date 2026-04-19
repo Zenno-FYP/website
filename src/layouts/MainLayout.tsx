@@ -497,6 +497,26 @@ export function MainLayout({ theme, onThemeChange }: MainLayoutProps) {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
+                {/* Peers */}
+                <button
+                  type="button"
+                  aria-label="Find peers"
+                  onClick={() => navigate("/peers")}
+                  className={`relative w-10 h-10 rounded-xl backdrop-blur-xl transition-all duration-300 group flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2 ${
+                    theme === "dark"
+                      ? "bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 focus-visible:ring-offset-[#0a0a0f]"
+                      : "bg-white/40 hover:bg-white/60 border border-white/30 hover:border-white/50 focus-visible:ring-offset-white"
+                  }`}
+                >
+                  <UsersRound
+                    className={`w-5 h-5 transition-colors ${
+                      theme === "dark"
+                        ? "text-gray-400 group-hover:text-purple-400"
+                        : "text-gray-600 group-hover:text-[#5B6FD8]"
+                    }`}
+                  />
+                </button>
+
                 {/* Divider */}
                 <div
                   className={`w-px h-6 mx-1 ${
