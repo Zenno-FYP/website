@@ -58,10 +58,10 @@ export function TopAppUsageCard({ theme, onViewClick }: TopAppUsageCardProps) {
   }, [firebaseUser?.uid]);
 
   return (
-    <Card className={`p-6 rounded-3xl shadow-lg hover:shadow-xl backdrop-blur-2xl transition-all cursor-pointer overflow-hidden relative ${
+    <Card className={`p-6 rounded-3xl shadow-lg hover:shadow-xl backdrop-blur-2xl transition-all overflow-hidden relative ${
       theme === 'dark'
-        ? 'bg-gray-800/50 border border-white/10 hover:bg-gray-800/70'
-        : 'bg-white/50 border border-white/60 hover:bg-white/70'
+        ? 'bg-gray-800/50 border border-white/10'
+        : 'bg-white/50 border border-white/60'
     }`}>
       <div className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl -z-0 ${
         theme === 'dark' ? 'bg-gradient-to-br from-purple-600/15 to-transparent' : 'bg-gradient-to-br from-[#5B6FD8]/10 to-transparent'

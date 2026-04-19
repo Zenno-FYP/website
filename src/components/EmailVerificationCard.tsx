@@ -46,8 +46,8 @@ export const EmailVerificationCard = ({ onBackToSignIn }: EmailVerificationCardP
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <Card className="w-full max-w-md p-8 border-slate-700">
+    <div className="min-h-screen flex items-center justify-center overflow-y-auto p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <Card className="w-full max-w-md p-6 sm:p-8 border-slate-700">
         <div className="flex flex-col items-center gap-4 mb-6">
           <div className="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center">
             <Mail className="w-6 h-6 text-blue-500" />

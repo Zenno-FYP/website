@@ -101,8 +101,8 @@ export interface UsageTrendDay {
 export interface PerformanceMetricsResponse {
   period: string;
   performance_summary: {
-    avg_typing_intensity: PerformanceMetric;    // KPM - Keystrokes Per Minute, calculated as Sum of daily KPM / active_days
-    avg_mouse_click_rate: PerformanceMetric;    // CPM - Clicks Per Minute, calculated as Sum of daily CPM / active_days
+    avg_typing_intensity: PerformanceMetric;    // KPM - Keystrokes Per Minute. Duration-weighted average across the window: Σ(kpm_i × duration_min_i) / Σ duration_min_i.
+    avg_mouse_click_rate: PerformanceMetric;    // CPM - Clicks Per Minute. Duration-weighted average across the window: Σ(cpm_i × duration_min_i) / Σ duration_min_i.
     avg_corrections: PerformanceMetric;         // % - Correction Rate, calculated as (total_deletions / total_estimated_keystrokes) × 100
     daily_active_average: PerformanceMetric;    // Hours - Average active hours per day, calculated as Total context duration / active_days
   };
@@ -585,8 +585,8 @@ export interface AgentPreferences {
   work_schedule: WorkSchedule;
   focus_style: FocusStyle;
   wellbeing_goal: WellbeingGoal;
-  has_meetings: boolean;
   nudge_enabled: boolean;
+  notification_sound: boolean;
   agent_tone: AgentTone;
   updatedAt?: string;
 }
@@ -595,8 +595,8 @@ export interface UpdateAgentPreferencesBody {
   work_schedule?: WorkSchedule;
   focus_style?: FocusStyle;
   wellbeing_goal?: WellbeingGoal;
-  has_meetings?: boolean;
   nudge_enabled?: boolean;
+  notification_sound?: boolean;
   agent_tone?: AgentTone;
 }
 
@@ -604,6 +604,14 @@ export interface AgentNudgeStats {
   total_nudges: number;
   today_nudges: number;
   this_week_nudges: number;
+  total_suppressed: number;
+  /**
+   * Map of suppression reason → count, populated by the desktop agent.
+   * Examples: `quiet_hours`, `too_recent`, `aggregation_failed`,
+   * `display_failed`, `unknown` (for legacy rows). Optional for
+   * back-compat with older backends.
+   */
+  suppressed_by_reason?: Record<string, number>;
 }
 
 // ============= Zenno Agent API =============
@@ -675,6 +683,76 @@ export async function fetchChatMessages(conversationId: string, before?: string)
 
 export async function markChatRead(conversationId: string): Promise<void> {
   await api.post(`/chat/conversations/${conversationId}/read`);
+}
+
+// ============= Notifications Types =============
+
+export interface NotificationItem {
+  _id: string;
+  user_id: string;
+  type: 'chat_message' | 'new_project' | 'daily_digest';
+  title: string;
+  body: string;
+  data: Record<string, string>;
+  read_at: string | null;
+  push_sent_at: string | null;
+  created_at: string;
+}
+
+export interface NotificationPreferences {
+  push_enabled: boolean;
+  chat_enabled: boolean;
+  new_project_enabled: boolean;
+  daily_digest_enabled: boolean;
+}
+
+// ============= Notifications API =============
+
+export async function registerFcmDevice(
+  token: string,
+  platform: 'web' | 'android',
+  deviceLabel: string,
+): Promise<void> {
+  await api.post('/notifications/devices', { token, platform, device_label: deviceLabel });
+}
+
+export async function unregisterFcmDevice(token: string): Promise<void> {
+  await api.delete(`/notifications/devices/${encodeURIComponent(token)}`);
+}
+
+export async function fetchNotifications(
+  page = 1,
+): Promise<{ items: NotificationItem[]; unreadCount: number; hasMore: boolean }> {
+  const r = await api.get<{ items: NotificationItem[]; unreadCount: number; hasMore: boolean }>(
+    '/notifications',
+    { params: { page } },
+  );
+  return r.data;
+}
+
+export async function fetchUnreadCount(): Promise<number> {
+  const r = await api.get<{ count: number }>('/notifications/unread-count');
+  return r.data.count;
+}
+
+export async function markNotificationRead(id: string): Promise<void> {
+  await api.post(`/notifications/${id}/read`);
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  await api.post('/notifications/read-all');
+}
+
+export async function fetchNotificationPreferences(): Promise<NotificationPreferences> {
+  const r = await api.get<{ data: NotificationPreferences }>('/notifications/preferences');
+  return r.data.data;
+}
+
+export async function updateNotificationPreferences(
+  partial: Partial<NotificationPreferences>,
+): Promise<NotificationPreferences> {
+  const r = await api.put<{ data: NotificationPreferences }>('/notifications/preferences', partial);
+  return r.data.data;
 }
 
 export default api;

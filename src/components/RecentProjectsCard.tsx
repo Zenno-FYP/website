@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, FolderOpen } from "lucide-react";
 import { useFirebaseUser, useUser } from "@/stores/useAuthHooks";
 import { fetchProjectInsights, ProjectDetail } from "@/services/api";
 import { getRelativeTime, getActivityStatus } from "@/utils/timeFormatter";
@@ -25,6 +26,7 @@ interface RecentProjectsCardProps {
 }
 
 export function RecentProjectsCard({ theme, onViewClick }: RecentProjectsCardProps) {
+  const navigate = useNavigate();
   const firebaseUser = useFirebaseUser();
   const user = useUser();
   const timezoneOffset = user?.timezone_offset ?? 0;
@@ -106,8 +108,12 @@ export function RecentProjectsCard({ theme, onViewClick }: RecentProjectsCardPro
               {error}
             </div>
           ) : projects.length === 0 ? (
-            <div className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-              No projects found
+            <div className={`text-center py-6 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+              <FolderOpen className="w-10 h-10 mx-auto mb-2 opacity-40" />
+              <p className="text-sm font-medium">No projects yet</p>
+              <p className="text-xs mt-1 opacity-80">
+                Open the Zenno desktop agent and start coding to see projects here.
+              </p>
             </div>
           ) : (
             projects.map((project, index) => {
@@ -117,9 +123,21 @@ export function RecentProjectsCard({ theme, onViewClick }: RecentProjectsCardPro
               const relativeTime = getRelativeTime(project.last_active, timezoneOffset);
 
               return (
-                <div 
-                  key={index} 
-                  className={`group flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 cursor-pointer border shadow-sm ${
+                <div
+                  key={index}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() =>
+                    navigate(`/projects/${encodeURIComponent(project.name)}`)
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      navigate(`/projects/${encodeURIComponent(project.name)}`);
+                    }
+                  }}
+                  aria-label={`Open project ${projectListTitle(project)}`}
+                  className={`group flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 cursor-pointer border shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60 ${
                     theme === 'dark'
                       ? 'border-white/5 hover:bg-white/10 hover:border-white/20 hover:shadow-lg shadow-black/10'
                       : 'border-gray-100/50 hover:bg-white/60 hover:border-white/80 hover:shadow-md shadow-gray-200/50'
