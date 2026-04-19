@@ -678,4 +678,74 @@ export async function markChatRead(conversationId: string): Promise<void> {
   await api.post(`/chat/conversations/${conversationId}/read`);
 }
 
+// ============= Notifications Types =============
+
+export interface NotificationItem {
+  _id: string;
+  user_id: string;
+  type: 'chat_message' | 'new_project' | 'daily_digest';
+  title: string;
+  body: string;
+  data: Record<string, string>;
+  read_at: string | null;
+  push_sent_at: string | null;
+  created_at: string;
+}
+
+export interface NotificationPreferences {
+  push_enabled: boolean;
+  chat_enabled: boolean;
+  new_project_enabled: boolean;
+  daily_digest_enabled: boolean;
+}
+
+// ============= Notifications API =============
+
+export async function registerFcmDevice(
+  token: string,
+  platform: 'web' | 'android',
+  deviceLabel: string,
+): Promise<void> {
+  await api.post('/notifications/devices', { token, platform, device_label: deviceLabel });
+}
+
+export async function unregisterFcmDevice(token: string): Promise<void> {
+  await api.delete(`/notifications/devices/${encodeURIComponent(token)}`);
+}
+
+export async function fetchNotifications(
+  page = 1,
+): Promise<{ items: NotificationItem[]; unreadCount: number; hasMore: boolean }> {
+  const r = await api.get<{ items: NotificationItem[]; unreadCount: number; hasMore: boolean }>(
+    '/notifications',
+    { params: { page } },
+  );
+  return r.data;
+}
+
+export async function fetchUnreadCount(): Promise<number> {
+  const r = await api.get<{ count: number }>('/notifications/unread-count');
+  return r.data.count;
+}
+
+export async function markNotificationRead(id: string): Promise<void> {
+  await api.post(`/notifications/${id}/read`);
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  await api.post('/notifications/read-all');
+}
+
+export async function fetchNotificationPreferences(): Promise<NotificationPreferences> {
+  const r = await api.get<{ data: NotificationPreferences }>('/notifications/preferences');
+  return r.data.data;
+}
+
+export async function updateNotificationPreferences(
+  partial: Partial<NotificationPreferences>,
+): Promise<NotificationPreferences> {
+  const r = await api.put<{ data: NotificationPreferences }>('/notifications/preferences', partial);
+  return r.data.data;
+}
+
 export default api;

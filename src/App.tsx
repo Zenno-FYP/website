@@ -14,6 +14,7 @@ import { MetricsDetailPage } from "@/components/MetricsDetailPage";
 import { SkillsProjectsDetailPage } from "@/components/SkillsProjectsDetailPage";
 import { AppLanguagesDetailPage } from "@/components/AppLanguagesDetailPage";
 import { ProjectDetailPage } from "@/components/ProjectDetailPage";
+import { NotificationsPage } from "@/components/NotificationsPage";
 
 function AuthPageRoute({ theme }: { theme: "light" | "dark" }) {
   const isCheckingAuth = useIsCheckingAuth();
@@ -206,6 +207,10 @@ export default function App() {
           <Route
             path="projects/:projectName"
             element={<ProjectDetailRoute theme={theme} />}
+          />
+          <Route
+            path="notifications"
+            element={<NotificationsPage />}
           />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
