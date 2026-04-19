@@ -585,8 +585,8 @@ export interface AgentPreferences {
   work_schedule: WorkSchedule;
   focus_style: FocusStyle;
   wellbeing_goal: WellbeingGoal;
-  has_meetings: boolean;
   nudge_enabled: boolean;
+  notification_sound: boolean;
   agent_tone: AgentTone;
   updatedAt?: string;
 }
@@ -595,8 +595,8 @@ export interface UpdateAgentPreferencesBody {
   work_schedule?: WorkSchedule;
   focus_style?: FocusStyle;
   wellbeing_goal?: WellbeingGoal;
-  has_meetings?: boolean;
   nudge_enabled?: boolean;
+  notification_sound?: boolean;
   agent_tone?: AgentTone;
 }
 
@@ -604,6 +604,7 @@ export interface AgentNudgeStats {
   total_nudges: number;
   today_nudges: number;
   this_week_nudges: number;
+  total_suppressed: number;
 }
 
 // ============= Zenno Agent API =============

@@ -13,12 +13,12 @@ import {
   Calendar,
   Brain,
   Heart,
-  Users,
+  Volume2,
   RefreshCw,
   Check,
   Loader2,
   TrendingUp,
-  Target,
+  BellOff,
   Clock,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
@@ -70,8 +70,8 @@ const defaultPrefs: AgentPreferences = {
   work_schedule: "standard",
   focus_style: "moderate",
   wellbeing_goal: "focused",
-  has_meetings: false,
   nudge_enabled: true,
+  notification_sound: false,
   agent_tone: "motivational",
 };
 
@@ -84,7 +84,7 @@ interface ZennoAgentPageProps {
 
 export function ZennoAgentPage({ theme, onBack }: ZennoAgentPageProps) {
   const [prefs, setPrefs] = useState<AgentPreferences>(defaultPrefs);
-  const [stats, setStats] = useState<AgentNudgeStats>({ total_nudges: 0, today_nudges: 0, this_week_nudges: 0 });
+  const [stats, setStats] = useState<AgentNudgeStats>({ total_nudges: 0, today_nudges: 0, this_week_nudges: 0, total_suppressed: 0 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -132,7 +132,7 @@ export function ZennoAgentPage({ theme, onBack }: ZennoAgentPageProps) {
   const handleScheduleChange = (s: WorkSchedule) => save({ work_schedule: s });
   const handleFocusChange = (f: FocusStyle) => save({ focus_style: f });
   const handleGoalChange = (g: WellbeingGoal) => save({ wellbeing_goal: g });
-  const handleMeetingsToggle = (v: boolean) => save({ has_meetings: v });
+  const handleSoundToggle = (v: boolean) => save({ notification_sound: v });
   const handleNudgeToggle = (v: boolean) => save({ nudge_enabled: v });
 
   // ── UI helpers ─────────────────────────────────────────────────────────────
@@ -317,18 +317,6 @@ export function ZennoAgentPage({ theme, onBack }: ZennoAgentPageProps) {
                   <p className={`text-xs mt-1 ${dark ? "text-gray-500" : "text-gray-500"}`}>Total Nudges</p>
                 </div>
 
-                {/* Today nudges */}
-                <div className={`p-4 rounded-2xl shadow-sm ${dark ? "bg-white/10" : "bg-white/60"}`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Target className={`w-4 h-4 ${dark ? "text-blue-400" : "text-blue-600"}`} />
-                    <p className={`text-xs ${dark ? "text-gray-400" : "text-gray-600"}`}>Today</p>
-                  </div>
-                  <p className={`text-3xl font-bold ${dark ? "text-white" : "text-gray-900"}`}>
-                    {stats.today_nudges}
-                  </p>
-                  <p className={`text-xs mt-1 ${dark ? "text-gray-500" : "text-gray-500"}`}>Nudges Today</p>
-                </div>
-
                 {/* This week nudges */}
                 <div className={`p-4 rounded-2xl shadow-sm ${dark ? "bg-white/10" : "bg-white/60"}`}>
                   <div className="flex items-center gap-2 mb-2">
@@ -339,6 +327,18 @@ export function ZennoAgentPage({ theme, onBack }: ZennoAgentPageProps) {
                     {stats.this_week_nudges}
                   </p>
                   <p className={`text-xs mt-1 ${dark ? "text-gray-500" : "text-gray-500"}`}>Nudges This Week</p>
+                </div>
+
+                {/* Total suppressed */}
+                <div className={`p-4 rounded-2xl shadow-sm ${dark ? "bg-white/10" : "bg-white/60"}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <BellOff className={`w-4 h-4 ${dark ? "text-orange-400" : "text-orange-500"}`} />
+                    <p className={`text-xs ${dark ? "text-gray-400" : "text-gray-600"}`}>Suppressed</p>
+                  </div>
+                  <p className={`text-3xl font-bold ${dark ? "text-white" : "text-gray-900"}`}>
+                    {stats.total_suppressed.toLocaleString()}
+                  </p>
+                  <p className={`text-xs mt-1 ${dark ? "text-gray-500" : "text-gray-500"}`}>Not Shown</p>
                 </div>
               </div>
             )}
@@ -381,22 +381,22 @@ export function ZennoAgentPage({ theme, onBack }: ZennoAgentPageProps) {
                 />
               </div>
 
-              {/* Meetings toggle */}
+              {/* Notification sound toggle */}
               <div className={`flex items-center justify-between p-4 rounded-2xl ${dark ? "bg-white/5 border border-white/10" : "bg-gray-50 border border-gray-200"}`}>
                 <div className="flex items-center gap-3">
-                  <Users className={`w-5 h-5 ${dark ? "text-gray-400" : "text-gray-600"}`} />
+                  <Volume2 className={`w-5 h-5 ${dark ? "text-gray-400" : "text-gray-600"}`} />
                   <div>
                     <p className={`font-medium text-sm ${dark ? "text-white" : "text-gray-900"}`}>
-                      Frequent Meetings
+                      Notification Sound
                     </p>
                     <p className={`text-xs ${dark ? "text-gray-400" : "text-gray-600"}`}>
-                      Suppresses nudges during calls
+                      {prefs.notification_sound ? "Chime plays with each nudge" : "Silent notifications"}
                     </p>
                   </div>
                 </div>
                 <Switch
-                  checked={prefs.has_meetings}
-                  onCheckedChange={handleMeetingsToggle}
+                  checked={prefs.notification_sound}
+                  onCheckedChange={handleSoundToggle}
                   disabled={saving || loading}
                 />
               </div>
