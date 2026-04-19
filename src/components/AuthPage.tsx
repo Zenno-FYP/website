@@ -215,16 +215,11 @@ export function AuthPage({ theme, onLogin }: AuthPageProps) {
       // This ensures the email is dispatched even if profile creation fails.
       await sendEmailVerification(userCredential.user);
 
-      // Step 5: Try to create the backend profile. The email-verified guard
-      // will reject this (unverified token → 401). We swallow that error and
-      // defer profile creation to the first verified sign-in, which uses
-      // syncOrCreateProfile and creates the profile if it doesn't yet exist.
-      try {
-        await createUserProfile(userCredential.user);
-      } catch {
-        // Guard rejected the unverified token — profile will be created on
-        // first verified sign-in via syncOrCreateProfile. Intentionally silent.
-      }
+      // Step 5: Create the backend (MongoDB) profile now. PUT /user/me carries
+      // @AllowUnverified() so the guard permits this one call with an unverified
+      // token, allowing the name and profile photo to be stored immediately at
+      // signup rather than waiting until the first verified sign-in.
+      await createUserProfile(userCredential.user);
 
       // Step 6: Do NOT sign out here. Keeping the (unverified) Firebase session
       // lets the verification card display the user's email address and lets the
