@@ -51,6 +51,16 @@ export function PeersPage({ theme, onBack, onSelectPeer }: PeersPageProps) {
     void load(committedQuery);
   }, [load, committedQuery, firebaseUser?.uid]);
 
+  // Debounce typed input → committed query so search-as-you-type does not
+  // fire a request on every keystroke. Enter still commits immediately via
+  // `onSearch` below.
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed === committedQuery) return;
+    const t = window.setTimeout(() => setCommittedQuery(trimmed), 350);
+    return () => window.clearTimeout(t);
+  }, [query, committedQuery]);
+
   const onSearch = () => {
     setCommittedQuery(query.trim());
   };
@@ -106,12 +116,20 @@ export function PeersPage({ theme, onBack, onSelectPeer }: PeersPageProps) {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={onKeyDown}
               placeholder="e.g. TypeScript, VS Code, backend, react…"
-              className={`h-11 rounded-xl pl-10 ${
+              className={`h-11 rounded-xl pl-10 pr-10 ${
                 theme === "dark"
                   ? "border-white/15 bg-white/10 text-white placeholder:text-gray-500"
                   : "border-gray-200 bg-white/90 text-gray-900"
               }`}
             />
+            {loading && (
+              <Loader2
+                className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin ${
+                  theme === "dark" ? "text-gray-400" : "text-gray-500"
+                }`}
+                aria-label="Searching"
+              />
+            )}
           </div>
           <Button
             type="button"
@@ -132,9 +150,17 @@ export function PeersPage({ theme, onBack, onSelectPeer }: PeersPageProps) {
       ) : null}
 
       {!loading && peers.length === 0 ? (
-        <p className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>
-          No matches yet. Try another keyword or invite teammates to Zenno.
-        </p>
+        <div
+          className={`text-center py-16 ${
+            theme === "dark" ? "text-gray-400" : "text-gray-500"
+          }`}
+        >
+          <UsersRound className="w-12 h-12 mx-auto mb-3 opacity-40" />
+          <p className="text-lg font-medium">No matches yet</p>
+          <p className="text-sm mt-1 opacity-80">
+            Try another keyword, or invite teammates to Zenno.
+          </p>
+        </div>
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

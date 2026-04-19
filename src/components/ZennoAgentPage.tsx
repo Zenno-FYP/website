@@ -34,6 +34,12 @@ import {
   AgentTone,
 } from "@/services/api";
 
+// Hide the Download Agent button entirely until VITE_DESKTOP_AGENT_DOWNLOAD_URL
+// is configured (e.g. signed installer hosted on the marketing site / GitHub
+// Releases). Users on environments without this var won't see a dead button.
+const DESKTOP_AGENT_DOWNLOAD_URL =
+  (import.meta.env.VITE_DESKTOP_AGENT_DOWNLOAD_URL as string | undefined)?.trim() || "";
+
 // ── Option sets ────────────────────────────────────────────────────────────────
 
 const tones: { id: AgentTone; label: string; emoji: string; description: string }[] = [
@@ -62,6 +68,27 @@ const wellbeingGoals: { id: WellbeingGoal; label: string; emoji: string; descrip
   { id: "habits",   label: "Build Habits",     emoji: "📈", description: "Reference day-level patterns for insight" },
   { id: "minimal",  label: "Minimal Mode",     emoji: "🤫", description: "Only essential nudges, no fluff" },
 ];
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+const SUPPRESSION_REASON_LABELS: Record<string, string> = {
+  nudge_disabled: "Nudges disabled",
+  quiet_hours: "Quiet hours",
+  too_recent: "Too recent",
+  insufficient_activity: "Not enough activity",
+  user_idle: "User idle",
+  in_meeting: "In a meeting",
+  aggregation_failed: "Aggregation failed",
+  display_failed: "Display failed",
+  unknown: "Unknown",
+};
+
+function formatSuppressionReason(reason: string): string {
+  if (SUPPRESSION_REASON_LABELS[reason]) return SUPPRESSION_REASON_LABELS[reason];
+  return reason
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 // ── Defaults ───────────────────────────────────────────────────────────────────
 
@@ -116,12 +143,22 @@ export function ZennoAgentPage({ theme, onBack }: ZennoAgentPageProps) {
   const save = useCallback(async (patch: Partial<AgentPreferences>) => {
     setSaving(true);
     setSaved(false);
+    setError(null);
+    // Optimistic update: snapshot the previous value so we can revert
+    // if the API call fails. This makes the toggle/segmented controls
+    // feel instant even on a slow connection.
+    let previous: AgentPreferences | null = null;
+    setPrefs((prev) => {
+      previous = prev;
+      return { ...prev, ...patch };
+    });
     try {
       const updated = await updateAgentPreferences(patch);
       setPrefs(updated);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch {
+      if (previous) setPrefs(previous);
       setError("Failed to save. Please try again.");
     } finally {
       setSaving(false);
@@ -267,10 +304,22 @@ export function ZennoAgentPage({ theme, onBack }: ZennoAgentPageProps) {
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
               </Button>
-              <Button className="rounded-xl bg-gradient-to-r from-[#7C4DFF] to-[#5B6FD8] hover:from-[#6B3FEE] hover:to-[#4A5FC7] text-white shadow-lg hover:shadow-xl transition-all">
-                <Download className="w-4 h-4 mr-2" />
-                Download Agent
-              </Button>
+              {DESKTOP_AGENT_DOWNLOAD_URL ? (
+                <Button
+                  asChild
+                  className="rounded-xl bg-gradient-to-r from-[#7C4DFF] to-[#5B6FD8] hover:from-[#6B3FEE] hover:to-[#4A5FC7] text-white shadow-lg hover:shadow-xl transition-all"
+                >
+                  <a
+                    href={DESKTOP_AGENT_DOWNLOAD_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Download the Zenno desktop agent installer"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Agent
+                  </a>
+                </Button>
+              ) : null}
             </div>
           </div>
 
@@ -339,6 +388,34 @@ export function ZennoAgentPage({ theme, onBack }: ZennoAgentPageProps) {
                     {stats.total_suppressed.toLocaleString()}
                   </p>
                   <p className={`text-xs mt-1 ${dark ? "text-gray-500" : "text-gray-500"}`}>Not Shown</p>
+                </div>
+              </div>
+            )}
+
+            {/* Suppression reason breakdown (when desktop agent is up to date) */}
+            {!loading && stats.suppressed_by_reason && Object.keys(stats.suppressed_by_reason).length > 0 && (
+              <div className={`mt-5 p-4 rounded-2xl ${dark ? "bg-white/5 border border-white/10" : "bg-white/60 border border-gray-200"}`}>
+                <p className={`text-xs uppercase tracking-wide mb-3 ${dark ? "text-gray-400" : "text-gray-600"}`}>
+                  Why nudges were suppressed
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(stats.suppressed_by_reason)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([reason, count]) => (
+                      <span
+                        key={reason}
+                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
+                          dark ? "bg-orange-500/15 text-orange-200 border border-orange-400/30"
+                               : "bg-orange-50 text-orange-700 border border-orange-200"
+                        }`}
+                        title={reason}
+                      >
+                        {formatSuppressionReason(reason)}
+                        <span className={dark ? "text-orange-300/80" : "text-orange-600/80"}>
+                          {count.toLocaleString()}
+                        </span>
+                      </span>
+                    ))}
                 </div>
               </div>
             )}

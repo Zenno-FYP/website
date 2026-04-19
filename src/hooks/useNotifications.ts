@@ -60,13 +60,15 @@ export function useNotifications() {
     void refresh();
   }, [refresh]);
 
-  // Foreground FCM messages
+  // Foreground FCM messages: show a toast for the incoming push, then re-sync
+  // from the backend so the notification list reflects the authoritative
+  // server-side records (correct user_id, _id, timestamps, ordering).
   useEffect(() => {
     if (!firebaseUser) return;
 
     let cancelled = false;
 
-    messagingPromise.then((messaging) => {
+    void messagingPromise.then((messaging) => {
       if (!messaging || cancelled) return;
 
       const unsub = onMessage(messaging, (payload: MessagePayload) => {
@@ -75,21 +77,9 @@ export function useNotifications() {
           toast(title, { description: body ?? '' });
         }
 
-        const data = payload.data ?? {};
-        const item: NotificationItem = {
-          _id: data.notificationId ?? '',
-          user_id: '',
-          type: (data.type as NotificationItem['type']) ?? 'chat_message',
-          title: title ?? '',
-          body: body ?? '',
-          data: data as Record<string, string>,
-          read_at: null,
-          push_sent_at: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-        };
-
-        setItems((prev) => [item, ...prev]);
-        setUnreadCount((c) => c + 1);
+        // Always re-sync to get the authoritative record from the backend
+        // (avoids guessing user_id / _id on the client).
+        void refresh();
       });
 
       unsubRef.current = unsub;
@@ -100,7 +90,7 @@ export function useNotifications() {
       unsubRef.current?.();
       unsubRef.current = null;
     };
-  }, [firebaseUser]);
+  }, [firebaseUser, refresh]);
 
   return { items, unreadCount, markRead, markAllRead, refresh, loading };
 }

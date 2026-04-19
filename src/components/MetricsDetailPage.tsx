@@ -72,6 +72,28 @@ interface BreakdownRow {
 // ── Chart data grouping (KPM / CPM averaged per period unit) ─────────────────
 interface ChartPoint { day: string; KPM: number; CPM: number; }
 
+/**
+ * Duration-weighted mean of a numeric field over a set of days.
+ *
+ * KPM/CPM are rates (per minute), so a plain arithmetic mean would weight
+ * a 30-min coding day equally with an 8-hour day. We weight by `active_hours`
+ * to match the backend's per-window aggregation in dashboard.service.ts.
+ */
+function weightedAvgByActiveHours(
+  days: DailyBehaviorMetrics[],
+  pick: (d: DailyBehaviorMetrics) => number,
+): number {
+  let weight = 0;
+  let weighted = 0;
+  for (const d of days) {
+    const w = d.active_hours;
+    if (w <= 0) continue;
+    weight += w;
+    weighted += pick(d) * w;
+  }
+  return weight > 0 ? weighted / weight : 0;
+}
+
 function groupChartData(daily: DailyBehaviorMetrics[], period: DetailPeriod): ChartPoint[] {
   if (period === "week") {
     return daily.map((d) => ({ day: d.day_name, KPM: d.typing_intensity_kpm, CPM: d.mouse_click_rate_cpm }));
@@ -80,11 +102,10 @@ function groupChartData(daily: DailyBehaviorMetrics[], period: DetailPeriod): Ch
     const rows: ChartPoint[] = [];
     for (let i = 0; i < daily.length; i += 7) {
       const chunk = daily.slice(i, i + 7);
-      const active = chunk.filter((d) => d.active_hours > 0);
       rows.push({
         day: `Wk ${Math.floor(i / 7) + 1}`,
-        KPM: active.length ? active.reduce((s, d) => s + d.typing_intensity_kpm, 0) / active.length : 0,
-        CPM: active.length ? active.reduce((s, d) => s + d.mouse_click_rate_cpm, 0) / active.length : 0,
+        KPM: weightedAvgByActiveHours(chunk, (d) => d.typing_intensity_kpm),
+        CPM: weightedAvgByActiveHours(chunk, (d) => d.mouse_click_rate_cpm),
       });
     }
     return rows;
@@ -97,14 +118,11 @@ function groupChartData(daily: DailyBehaviorMetrics[], period: DetailPeriod): Ch
     monthMap.get(mk)!.push(d);
   }
   const mNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  return Array.from(monthMap.entries()).map(([mk, days]) => {
-    const active = days.filter((d) => d.active_hours > 0);
-    return {
-      day: mNames[parseInt(mk.split("-")[1]) - 1],
-      KPM: active.length ? active.reduce((s, d) => s + d.typing_intensity_kpm, 0) / active.length : 0,
-      CPM: active.length ? active.reduce((s, d) => s + d.mouse_click_rate_cpm, 0) / active.length : 0,
-    };
-  });
+  return Array.from(monthMap.entries()).map(([mk, days]) => ({
+    day: mNames[parseInt(mk.split("-")[1]) - 1],
+    KPM: weightedAvgByActiveHours(days, (d) => d.typing_intensity_kpm),
+    CPM: weightedAvgByActiveHours(days, (d) => d.mouse_click_rate_cpm),
+  }));
 }
 
 function groupDailySeries(daily: DailyBehaviorMetrics[], period: DetailPeriod): BreakdownRow[] {
@@ -121,15 +139,14 @@ function groupDailySeries(daily: DailyBehaviorMetrics[], period: DetailPeriod): 
     const rows: BreakdownRow[] = [];
     for (let i = 0; i < daily.length; i += 7) {
       const chunk = daily.slice(i, i + 7);
-      const active = chunk.filter((d) => d.active_hours > 0);
-      const avg = (fn: (d: DailyBehaviorMetrics) => number) =>
-        active.length ? active.reduce((s, d) => s + fn(d), 0) / active.length : 0;
+      // KPM, CPM, and correction% are all rates → duration-weighted.
+      // active_hours and idle_hours are absolute totals → plain sum.
       rows.push({
         label: `Wk ${Math.floor(i / 7) + 1}`,
         sublabel: `${chunk[0].date} – ${chunk[chunk.length - 1].date}`,
-        kpm: avg((d) => d.typing_intensity_kpm),
-        cpm: avg((d) => d.mouse_click_rate_cpm),
-        correction: avg((d) => d.correction_rate_percent),
+        kpm: weightedAvgByActiveHours(chunk, (d) => d.typing_intensity_kpm),
+        cpm: weightedAvgByActiveHours(chunk, (d) => d.mouse_click_rate_cpm),
+        correction: weightedAvgByActiveHours(chunk, (d) => d.correction_rate_percent),
         activeHours: chunk.reduce((s, d) => s + d.active_hours, 0),
         idleHours: chunk.reduce((s, d) => s + d.idle_hours, 0),
       });
@@ -147,15 +164,12 @@ function groupDailySeries(daily: DailyBehaviorMetrics[], period: DetailPeriod): 
   const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   return Array.from(monthMap.entries()).map(([mk, days]) => {
     const [year, mon] = mk.split("-");
-    const active = days.filter((d) => d.active_hours > 0);
-    const avg = (fn: (d: DailyBehaviorMetrics) => number) =>
-      active.length ? active.reduce((s, d) => s + fn(d), 0) / active.length : 0;
     return {
       label: `${monthNames[parseInt(mon) - 1]} ${year}`,
       sublabel: `${days.length} days`,
-      kpm: avg((d) => d.typing_intensity_kpm),
-      cpm: avg((d) => d.mouse_click_rate_cpm),
-      correction: avg((d) => d.correction_rate_percent),
+      kpm: weightedAvgByActiveHours(days, (d) => d.typing_intensity_kpm),
+      cpm: weightedAvgByActiveHours(days, (d) => d.mouse_click_rate_cpm),
+      correction: weightedAvgByActiveHours(days, (d) => d.correction_rate_percent),
       activeHours: days.reduce((s, d) => s + d.active_hours, 0),
       idleHours: days.reduce((s, d) => s + d.idle_hours, 0),
     };

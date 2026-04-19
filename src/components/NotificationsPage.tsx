@@ -15,6 +15,8 @@ import {
   Loader2,
   CheckCheck,
 } from "lucide-react";
+import { NotificationListSkeleton } from "@/components/skeletons/DashboardSkeleton";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 function notifIcon(type: string) {
   switch (type) {
@@ -43,6 +45,7 @@ function timeAgo(iso: string) {
 export function NotificationsPage() {
   const { theme } = useOutletContext<{ theme: "light" | "dark" }>();
   const navigate = useNavigate();
+  const prefersReducedMotion = useReducedMotion();
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -77,9 +80,26 @@ export function NotificationsPage() {
 
   const handleClick = (n: NotificationItem) => {
     if (!n.read_at) void handleMarkRead(n._id);
-    if (n.type === "chat_message") navigate("/chats");
-    else if (n.type === "new_project") navigate("/dashboard");
-    else navigate("/dashboard");
+    if (n.type === "chat_message") {
+      const conversationId = n.data?.conversationId;
+      const senderUserId = n.data?.senderUserId;
+      if (conversationId) {
+        navigate("/chats", { state: { initialConversationId: conversationId } });
+      } else if (senderUserId) {
+        navigate("/chats", { state: { initialPeerUserId: senderUserId } });
+      } else {
+        navigate("/chats");
+      }
+    } else if (n.type === "new_project") {
+      const projectName = n.data?.projectName;
+      if (projectName) {
+        navigate(`/projects/${encodeURIComponent(projectName)}`);
+      } else {
+        navigate("/dashboard");
+      }
+    } else {
+      navigate("/dashboard");
+    }
   };
 
   return (
@@ -87,11 +107,13 @@ export function NotificationsPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <button
+            type="button"
+            aria-label="Back to dashboard"
             onClick={() => navigate("/dashboard")}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2 ${
               theme === "dark"
-                ? "bg-white/5 hover:bg-white/10 border border-white/10"
-                : "bg-white/40 hover:bg-white/60 border border-white/30"
+                ? "bg-white/5 hover:bg-white/10 border border-white/10 focus-visible:ring-offset-[#0a0a0f]"
+                : "bg-white/40 hover:bg-white/60 border border-white/30 focus-visible:ring-offset-white"
             }`}
           >
             <ArrowLeft className={`w-5 h-5 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`} />
@@ -114,13 +136,26 @@ export function NotificationsPage() {
       </div>
 
       <div className="space-y-3">
+        {/* First-load skeleton: render shimmer placeholders instead of the
+            small spinner so the page does not look empty before the first
+            batch arrives. */}
+        {loading && items.length === 0 && (
+          <NotificationListSkeleton theme={theme} count={6} />
+        )}
+
+        <AnimatePresence initial={false}>
         {items.map((n) => {
           const ic = notifIcon(n.type);
           return (
-            <div
+            <motion.div
               key={n._id}
+              layout={!prefersReducedMotion}
+              initial={prefersReducedMotion ? false : { opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 24 }}
+              transition={{ duration: prefersReducedMotion ? 0.15 : 0.22, ease: "easeOut" }}
               onClick={() => handleClick(n)}
-              className={`flex gap-4 p-4 rounded-xl cursor-pointer transition-all ${
+              className={`flex gap-4 p-4 rounded-xl cursor-pointer transition-colors ${
                 theme === "dark"
                   ? `${!n.read_at ? "bg-white/[0.06] border-purple-500/20" : "bg-white/[0.02] border-white/5"} border hover:bg-white/10`
                   : `${!n.read_at ? "bg-[#5B6FD8]/[0.04] border-[#5B6FD8]/15" : "bg-white/40 border-gray-200/50"} border hover:bg-gray-50`
@@ -143,11 +178,12 @@ export function NotificationsPage() {
                   {!n.read_at && <span className="w-2 h-2 rounded-full bg-[#5B6FD8]" />}
                 </div>
               </div>
-            </div>
+            </motion.div>
           );
         })}
+        </AnimatePresence>
 
-        {loading && (
+        {loading && items.length > 0 && (
           <div className={`flex items-center justify-center py-8 ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
             <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…
           </div>

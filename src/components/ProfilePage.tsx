@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -175,6 +176,7 @@ export function ProfilePage({
   backLabel = "Back to Dashboard",
   onStartChatWithPeer,
 }: ProfilePageProps) {
+  const navigate = useNavigate();
   const firebaseUser = useFirebaseUser();
   const user = useUser();
   const { setUser } = useAuthActions();
@@ -451,9 +453,26 @@ export function ProfilePage({
                   </Button>
                 </div>
               ) : null}
-              <h3 className={`text-lg font-semibold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-                {projectTitle(p)}
-              </h3>
+              {!isPublicView && !isEditMode ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate(`/projects/${encodeURIComponent(p.project_name)}`)
+                  }
+                  className={`text-lg font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60 rounded ${
+                    theme === "dark"
+                      ? "text-white hover:text-purple-300"
+                      : "text-gray-900 hover:text-[#5B6FD8]"
+                  }`}
+                  aria-label={`Open project ${projectTitle(p)}`}
+                >
+                  {projectTitle(p)}
+                </button>
+              ) : (
+                <h3 className={`text-lg font-semibold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                  {projectTitle(p)}
+                </h3>
+              )}
             </div>
             {p.display_name?.trim() && p.display_name.trim() !== p.project_name && (
               <p className={`mb-2 font-mono text-xs ${theme === "dark" ? "text-gray-500" : "text-gray-500"}`}>

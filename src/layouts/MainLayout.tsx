@@ -1,10 +1,12 @@
 import { useState, useCallback, useEffect } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { useFirebaseUser, useLogout, useUser } from "@/stores/useAuthHooks";
 import { fetchChatConversations, type ChatConversationSummary } from "@/services/api";
 import { useNotifications } from "@/hooks/useNotifications";
 import { SettingsPanel } from "@/components/SettingsPanel";
+import { NotificationListSkeleton } from "@/components/skeletons/DashboardSkeleton";
+import { PageTransition } from "@/components/PageTransition";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -17,14 +19,12 @@ import {
 import {
   Bell,
   MessageCircle,
-  Bot,
   Settings,
   Sparkles,
   LogOut,
   UserCircle,
   UsersRound,
   Loader2,
-  TrendingUp,
   FolderPlus,
   BarChart3,
 } from "lucide-react";
@@ -180,15 +180,17 @@ export function MainLayout({ theme, onThemeChange }: MainLayoutProps) {
             <div className="flex items-center gap-6">
               {/* Logo */}
               <div className="flex-shrink-0">
-                <div
-                  className="relative group cursor-pointer"
+                <button
+                  type="button"
+                  aria-label="Go to dashboard"
+                  className="relative group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2 rounded-xl"
                   onClick={() => navigate("/dashboard")}
                 >
                   <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#5B6FD8] to-[#7C4DFF] flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all duration-300">
                     <Sparkles className="w-6 h-6 text-white drop-shadow-md" />
                   </div>
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/20 to-transparent opacity-50" />
-                </div>
+                </button>
               </div>
 
               <div className="flex-1" />
@@ -199,10 +201,16 @@ export function MainLayout({ theme, onThemeChange }: MainLayoutProps) {
                 <DropdownMenu onOpenChange={(open) => { if (open) void loadHeaderChats(); }}>
                   <DropdownMenuTrigger asChild>
                     <button
-                      className={`relative w-10 h-10 rounded-xl backdrop-blur-xl transition-all duration-300 group flex items-center justify-center ${
+                      type="button"
+                      aria-label={
+                        totalChatUnread > 0
+                          ? `Messages, ${totalChatUnread} unread`
+                          : "Messages"
+                      }
+                      className={`relative w-10 h-10 rounded-xl backdrop-blur-xl transition-all duration-300 group flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2 ${
                         theme === "dark"
-                          ? "bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20"
-                          : "bg-white/40 hover:bg-white/60 border border-white/30 hover:border-white/50"
+                          ? "bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 focus-visible:ring-offset-[#0a0a0f]"
+                          : "bg-white/40 hover:bg-white/60 border border-white/30 hover:border-white/50 focus-visible:ring-offset-white"
                       }`}
                     >
                       <MessageCircle
@@ -331,10 +339,16 @@ export function MainLayout({ theme, onThemeChange }: MainLayoutProps) {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
-                      className={`relative w-10 h-10 rounded-xl backdrop-blur-xl transition-all duration-300 group flex items-center justify-center ${
+                      type="button"
+                      aria-label={
+                        notifs.unreadCount > 0
+                          ? `Notifications, ${notifs.unreadCount} unread`
+                          : "Notifications"
+                      }
+                      className={`relative w-10 h-10 rounded-xl backdrop-blur-xl transition-all duration-300 group flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2 ${
                         theme === "dark"
-                          ? "bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20"
-                          : "bg-white/40 hover:bg-white/60 border border-white/30 hover:border-white/50"
+                          ? "bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 focus-visible:ring-offset-[#0a0a0f]"
+                          : "bg-white/40 hover:bg-white/60 border border-white/30 hover:border-white/50 focus-visible:ring-offset-white"
                       }`}
                     >
                       <Bell
@@ -381,16 +395,15 @@ export function MainLayout({ theme, onThemeChange }: MainLayoutProps) {
                     <DropdownMenuSeparator
                       className={theme === "dark" ? "bg-white/10" : "bg-gray-200"}
                     />
-                    <div className="max-h-96 overflow-y-auto">
-                      {notifs.loading ? (
-                        <div className={`flex items-center justify-center gap-2 py-6 text-sm ${
-                          theme === "dark" ? "text-gray-400" : "text-gray-500"
-                        }`}>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Loading…
+                    {/* Pin a min-height so the dropdown does not jump
+                        between the loading / empty / content states. */}
+                    <div className="max-h-96 min-h-[160px] overflow-y-auto">
+                      {notifs.loading && notifs.items.length === 0 ? (
+                        <div className="px-3 py-2">
+                          <NotificationListSkeleton theme={theme} count={3} />
                         </div>
                       ) : notifs.items.length === 0 ? (
-                        <p className={`px-3 py-6 text-center text-sm ${
+                        <p className={`px-3 py-12 text-center text-sm ${
                           theme === "dark" ? "text-gray-500" : "text-gray-600"
                         }`}>
                           No notifications yet
@@ -403,8 +416,32 @@ export function MainLayout({ theme, onThemeChange }: MainLayoutProps) {
                               key={n._id}
                               onClick={() => {
                                 if (!n.read_at) void notifs.markRead(n._id);
-                                if (n.type === "chat_message") navigate("/chats");
-                                else navigate("/notifications");
+                                if (n.type === "chat_message") {
+                                  const conversationId = n.data?.conversationId;
+                                  const senderUserId = n.data?.senderUserId;
+                                  if (conversationId) {
+                                    navigate("/chats", {
+                                      state: { initialConversationId: conversationId },
+                                    });
+                                  } else if (senderUserId) {
+                                    navigate("/chats", {
+                                      state: { initialPeerUserId: senderUserId },
+                                    });
+                                  } else {
+                                    navigate("/chats");
+                                  }
+                                } else if (n.type === "new_project") {
+                                  const projectName = n.data?.projectName;
+                                  if (projectName) {
+                                    navigate(
+                                      `/projects/${encodeURIComponent(projectName)}`,
+                                    );
+                                  } else {
+                                    navigate("/notifications");
+                                  }
+                                } else {
+                                  navigate("/notifications");
+                                }
                               }}
                               className={`px-4 py-3 cursor-pointer ${
                                 theme === "dark"
@@ -471,10 +508,12 @@ export function MainLayout({ theme, onThemeChange }: MainLayoutProps) {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
-                      className={`relative rounded-xl backdrop-blur-xl transition-all duration-300 group flex items-center gap-2 px-2 py-1.5 ${
+                      type="button"
+                      aria-label="Open user menu"
+                      className={`relative rounded-xl backdrop-blur-xl transition-all duration-300 group flex items-center gap-2 px-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2 ${
                         theme === "dark"
-                          ? "bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20"
-                          : "bg-white/40 hover:bg-white/60 border border-white/30 hover:border-white/50"
+                          ? "bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 focus-visible:ring-offset-[#0a0a0f]"
+                          : "bg-white/40 hover:bg-white/60 border border-white/30 hover:border-white/50 focus-visible:ring-offset-white"
                       }`}
                     >
                       <Avatar className="w-7 h-7">
@@ -597,7 +636,7 @@ export function MainLayout({ theme, onThemeChange }: MainLayoutProps) {
 
         {/* Page Content */}
         <div className="px-8 py-6 pt-24">
-          <Outlet context={{ theme }} />
+          <PageTransition context={{ theme }} />
         </div>
       </div>
 

@@ -46,10 +46,10 @@ export function DeveloperTrendsCard({ theme, usageTrendData, period, onPeriodCha
   };
 
   return (
-    <Card className={`p-8 rounded-3xl shadow-lg hover:shadow-xl backdrop-blur-2xl transition-all cursor-pointer relative overflow-hidden ${
+    <Card className={`p-8 rounded-3xl shadow-lg hover:shadow-xl backdrop-blur-2xl transition-all relative overflow-hidden ${
       theme === 'dark'
-        ? 'bg-gray-800/50 border border-white/10 hover:bg-gray-800/70'
-        : 'bg-white/50 border border-white/60 hover:bg-white/70'
+        ? 'bg-gray-800/50 border border-white/10'
+        : 'bg-white/50 border border-white/60'
     }`}>
       <div className={`absolute top-0 left-0 w-64 h-64 rounded-full blur-3xl ${
         theme === 'dark'

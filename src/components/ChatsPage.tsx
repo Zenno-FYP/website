@@ -22,6 +22,7 @@ interface ChatsPageProps {
   theme: "light" | "dark";
   onBack: () => void;
   initialPeerUserId?: string | null;
+  initialConversationId?: string | null;
   onConsumedInitialPeer?: () => void;
 }
 
@@ -43,7 +44,13 @@ function formatConvTime(iso: string): string {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-export function ChatsPage({ theme, onBack, initialPeerUserId, onConsumedInitialPeer }: ChatsPageProps) {
+export function ChatsPage({
+  theme,
+  onBack,
+  initialPeerUserId,
+  initialConversationId,
+  onConsumedInitialPeer,
+}: ChatsPageProps) {
   const firebaseUser = useFirebaseUser();
   const profileUser = useUser();
   const myId = profileUser?._id ?? "";
@@ -191,13 +198,18 @@ export function ChatsPage({ theme, onBack, initialPeerUserId, onConsumedInitialP
   }, [firebaseUser?.uid]);
 
   useEffect(() => {
-    if (!initialPeerUserId || !firebaseUser || openingPeerRef.current) return;
+    if (!firebaseUser || openingPeerRef.current) return;
+    if (!initialPeerUserId && !initialConversationId) return;
     openingPeerRef.current = true;
     void (async () => {
       try {
-        const convId = await openChatWithUser(initialPeerUserId);
         await loadConversations();
-        setSelectedConvId(convId);
+        if (initialConversationId) {
+          setSelectedConvId(initialConversationId);
+        } else if (initialPeerUserId) {
+          const convId = await openChatWithUser(initialPeerUserId);
+          setSelectedConvId(convId);
+        }
         onConsumedInitialPeer?.();
       } catch (e) {
         console.error(e);
@@ -205,7 +217,13 @@ export function ChatsPage({ theme, onBack, initialPeerUserId, onConsumedInitialP
         openingPeerRef.current = false;
       }
     })();
-  }, [initialPeerUserId, firebaseUser, loadConversations, onConsumedInitialPeer]);
+  }, [
+    initialPeerUserId,
+    initialConversationId,
+    firebaseUser,
+    loadConversations,
+    onConsumedInitialPeer,
+  ]);
 
   const filtered = conversations.filter((c) =>
     c.other_user.name.toLowerCase().includes(searchQuery.trim().toLowerCase()),
@@ -308,11 +326,23 @@ export function ChatsPage({ theme, onBack, initialPeerUserId, onConsumedInitialP
                 ) : null}
                 {listError ? <p className="px-2 py-4 text-sm text-red-500">{listError}</p> : null}
                 {!loadingList && filtered.length === 0 ? (
-                  <p className={`px-3 py-6 text-sm ${panelMuted}`}>
-                    {conversations.length === 0
-                      ? "No conversations yet. Message someone from their profile."
-                      : "No matches."}
-                  </p>
+                  <div className={`px-3 py-10 text-center ${panelMuted}`}>
+                    <MessageCircle className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                    <p className="text-sm font-medium">
+                      {conversations.length === 0
+                        ? "No conversations yet"
+                        : "No matches"}
+                    </p>
+                    {conversations.length === 0 ? (
+                      <p className="text-xs mt-1 opacity-80">
+                        Visit a peer's profile and start a chat from there.
+                      </p>
+                    ) : (
+                      <p className="text-xs mt-1 opacity-80">
+                        Try a different name or search term.
+                      </p>
+                    )}
+                  </div>
                 ) : null}
                 {filtered.map((c) => (
                   <div

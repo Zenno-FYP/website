@@ -6,6 +6,24 @@ import { useFirebaseUser } from '@/stores/useAuthHooks';
 
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY as string | undefined;
 
+function buildSwUrl(): string {
+  const cfg = {
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string | undefined,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string | undefined,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID as string | undefined,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET as string | undefined,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID as
+      | string
+      | undefined,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID as string | undefined,
+  };
+  const params = new URLSearchParams();
+  for (const [k, v] of Object.entries(cfg)) {
+    if (v) params.set(k, v);
+  }
+  return `/firebase-messaging-sw.js?${params.toString()}`;
+}
+
 export function useFcmToken(pushEnabled: boolean) {
   const firebaseUser = useFirebaseUser();
   const tokenRef = useRef<string | null>(null);
@@ -18,7 +36,7 @@ export function useFcmToken(pushEnabled: boolean) {
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') return;
 
-      const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+      const swReg = await navigator.serviceWorker.register(buildSwUrl());
 
       const token = await getToken(messaging, {
         vapidKey: VAPID_KEY,

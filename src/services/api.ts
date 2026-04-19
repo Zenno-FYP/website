@@ -101,8 +101,8 @@ export interface UsageTrendDay {
 export interface PerformanceMetricsResponse {
   period: string;
   performance_summary: {
-    avg_typing_intensity: PerformanceMetric;    // KPM - Keystrokes Per Minute, calculated as Sum of daily KPM / active_days
-    avg_mouse_click_rate: PerformanceMetric;    // CPM - Clicks Per Minute, calculated as Sum of daily CPM / active_days
+    avg_typing_intensity: PerformanceMetric;    // KPM - Keystrokes Per Minute. Duration-weighted average across the window: Σ(kpm_i × duration_min_i) / Σ duration_min_i.
+    avg_mouse_click_rate: PerformanceMetric;    // CPM - Clicks Per Minute. Duration-weighted average across the window: Σ(cpm_i × duration_min_i) / Σ duration_min_i.
     avg_corrections: PerformanceMetric;         // % - Correction Rate, calculated as (total_deletions / total_estimated_keystrokes) × 100
     daily_active_average: PerformanceMetric;    // Hours - Average active hours per day, calculated as Total context duration / active_days
   };
@@ -605,6 +605,13 @@ export interface AgentNudgeStats {
   today_nudges: number;
   this_week_nudges: number;
   total_suppressed: number;
+  /**
+   * Map of suppression reason → count, populated by the desktop agent.
+   * Examples: `quiet_hours`, `too_recent`, `aggregation_failed`,
+   * `display_failed`, `unknown` (for legacy rows). Optional for
+   * back-compat with older backends.
+   */
+  suppressed_by_reason?: Record<string, number>;
 }
 
 // ============= Zenno Agent API =============

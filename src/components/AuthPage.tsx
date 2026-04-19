@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { useSetFirebaseUser, useSetUser, useSetLoading, useSetAuthError, useSetAuthenticated, useAuthUI } from "@/stores/useAuthHooks";
+import { useEffect, useState } from "react";
+import { useSetFirebaseUser, useSetUser, useSetLoading, useSetAuthError, useSetAuthenticated, useAuthUI, useFirebaseUser } from "@/stores/useAuthHooks";
+import { useAuthStore } from "@/stores/authStore";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Card } from "./ui/card";
@@ -9,7 +10,6 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendEmailVerification,
-  signOut,
   updateProfile,
   signInWithPopup,
   GoogleAuthProvider,
@@ -34,6 +34,7 @@ export function AuthPage({ theme, onLogin }: AuthPageProps) {
   const setLoading = useSetLoading();
   const setAuthError = useSetAuthError();
   const setAuthenticated = useSetAuthenticated();
+  const firebaseUser = useFirebaseUser();
   const { authError, isLoading } = useAuthUI();
 
   const [step, setStep] = useState<AuthStep>("signin");
@@ -47,6 +48,20 @@ export function AuthPage({ theme, onLogin }: AuthPageProps) {
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
   const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+
+  // If a Firebase session is restored for an unverified password user (e.g. tab
+  // refresh during the verify step), park them on the verify-email card instead
+  // of letting the signin form re-fire any backend calls.
+  useEffect(() => {
+    if (
+      firebaseUser &&
+      !firebaseUser.emailVerified &&
+      firebaseUser.providerData.every((p) => p.providerId === "password") &&
+      step !== "verify-email"
+    ) {
+      setStep("verify-email");
+    }
+  }, [firebaseUser, step]);
 
   // Fetch user profile with backend API after email verification
   const fetchUserProfile = async (firebaseUser: typeof auth.currentUser) => {
@@ -227,9 +242,9 @@ export function AuthPage({ theme, onLogin }: AuthPageProps) {
       // Send verification email
       await sendEmailVerification(userCredential.user);
 
-      // Sign out the user immediately after signup
-      await signOut(auth);
-      setFirebaseUser(null);
+      // Sign out via the store so caches + request-cache are invalidated; this also
+      // clears firebaseUser, so no follow-up request fires with the unverified token.
+      await useAuthStore.getState().logout();
 
       toast.success("Account created successfully! 🎉", {
         description: `Verification link sent to ${formData.email}. Please check your inbox and verify your email to sign in.`,
@@ -350,7 +365,7 @@ export function AuthPage({ theme, onLogin }: AuthPageProps) {
       return (
         <>
           <div
-            className={`min-h-screen flex items-center justify-center relative overflow-hidden transition-colors duration-500 py-8 ${
+            className={`min-h-screen flex items-center justify-center relative overflow-y-auto transition-colors duration-500 py-8 ${
               theme === "dark"
                 ? "bg-[#0a0a0f]"
                 : "bg-gradient-to-br from-[#E8EAFF] via-[#F5F3FF] to-[#FDF4FF]"
@@ -472,7 +487,7 @@ export function AuthPage({ theme, onLogin }: AuthPageProps) {
       return (
         <>
         <div
-          className={`min-h-screen flex items-center justify-center relative overflow-hidden transition-colors duration-500 py-8 ${
+          className={`min-h-screen flex items-center justify-center relative overflow-y-auto transition-colors duration-500 py-8 ${
             theme === "dark"
               ? "bg-[#0a0a0f]"
               : "bg-gradient-to-br from-[#E8EAFF] via-[#F5F3FF] to-[#FDF4FF]"

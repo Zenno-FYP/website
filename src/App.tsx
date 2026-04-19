@@ -1,20 +1,61 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Routes, Route, Navigate, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { useIsCheckingAuth, useFirebaseUser } from "@/stores/useAuthHooks";
 import { useSyncProfileOnLogin } from "@/hooks/useSyncProfileOnLogin";
+import { needsEmailVerification } from "@/lib/authHelpers";
 import { MainLayout } from "@/layouts/MainLayout";
 import { AuthPage } from "@/components/AuthPage";
-import { DashboardPage } from "@/pages/DashboardPage";
-import { ZennoAgentPage } from "@/components/ZennoAgentPage";
-import { ChatsPage } from "@/components/ChatsPage";
-import { ProfilePage } from "@/components/ProfilePage";
-import { PeersPage } from "@/components/PeersPage";
-import { MetricsDetailPage } from "@/components/MetricsDetailPage";
-import { SkillsProjectsDetailPage } from "@/components/SkillsProjectsDetailPage";
-import { AppLanguagesDetailPage } from "@/components/AppLanguagesDetailPage";
-import { ProjectDetailPage } from "@/components/ProjectDetailPage";
-import { NotificationsPage } from "@/components/NotificationsPage";
+
+// Lazy-load heavy authenticated pages so the initial sign-in bundle stays small.
+const DashboardPage = lazy(() =>
+  import("@/pages/DashboardPage").then((m) => ({ default: m.DashboardPage })),
+);
+const ZennoAgentPage = lazy(() =>
+  import("@/components/ZennoAgentPage").then((m) => ({ default: m.ZennoAgentPage })),
+);
+const ChatsPage = lazy(() =>
+  import("@/components/ChatsPage").then((m) => ({ default: m.ChatsPage })),
+);
+const ProfilePage = lazy(() =>
+  import("@/components/ProfilePage").then((m) => ({ default: m.ProfilePage })),
+);
+const PeersPage = lazy(() =>
+  import("@/components/PeersPage").then((m) => ({ default: m.PeersPage })),
+);
+const MetricsDetailPage = lazy(() =>
+  import("@/components/MetricsDetailPage").then((m) => ({
+    default: m.MetricsDetailPage,
+  })),
+);
+const SkillsProjectsDetailPage = lazy(() =>
+  import("@/components/SkillsProjectsDetailPage").then((m) => ({
+    default: m.SkillsProjectsDetailPage,
+  })),
+);
+const AppLanguagesDetailPage = lazy(() =>
+  import("@/components/AppLanguagesDetailPage").then((m) => ({
+    default: m.AppLanguagesDetailPage,
+  })),
+);
+const ProjectDetailPage = lazy(() =>
+  import("@/components/ProjectDetailPage").then((m) => ({
+    default: m.ProjectDetailPage,
+  })),
+);
+const NotificationsPage = lazy(() =>
+  import("@/components/NotificationsPage").then((m) => ({
+    default: m.NotificationsPage,
+  })),
+);
+
+function PageFallback() {
+  return (
+    <div className="min-h-[40vh] flex items-center justify-center">
+      <div className="h-8 w-8 rounded-full border-2 border-purple-500/30 border-t-purple-500 animate-spin" />
+    </div>
+  );
+}
 
 function AuthPageRoute({ theme }: { theme: "light" | "dark" }) {
   const isCheckingAuth = useIsCheckingAuth();
@@ -26,7 +67,9 @@ function AuthPageRoute({ theme }: { theme: "light" | "dark" }) {
       </div>
     );
   }
-  if (firebaseUser) {
+  // Unverified password users stay on /auth so AuthPage can render the
+  // EmailVerificationCard step instead of bouncing them to the dashboard.
+  if (firebaseUser && !needsEmailVerification(firebaseUser)) {
     return <Navigate to="/dashboard" replace />;
   }
   return <AuthPage theme={theme} />;
@@ -47,20 +90,28 @@ function RequireAuth() {
   if (!firebaseUser) {
     return <Navigate to="/auth" replace />;
   }
+  // Block protected routes for password users that have not verified their email.
+  if (needsEmailVerification(firebaseUser)) {
+    return <Navigate to="/auth" replace />;
+  }
   return <Outlet />;
 }
 
 function ChatsRoute({ theme }: { theme: "light" | "dark" }) {
   const navigate = useNavigate();
   const { state } = useLocation();
-  const initialPeerUserId =
-    (state as { initialPeerUserId?: string } | null)?.initialPeerUserId ?? null;
+  const stateData = state as
+    | { initialPeerUserId?: string; initialConversationId?: string }
+    | null;
+  const initialPeerUserId = stateData?.initialPeerUserId ?? null;
+  const initialConversationId = stateData?.initialConversationId ?? null;
 
   return (
     <ChatsPage
       theme={theme}
       onBack={() => navigate("/dashboard")}
       initialPeerUserId={initialPeerUserId}
+      initialConversationId={initialConversationId}
       onConsumedInitialPeer={() =>
         navigate("/chats", { replace: true, state: {} })
       }
@@ -179,38 +230,91 @@ export default function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route
             path="dashboard"
-            element={<DashboardPage theme={theme} />}
+            element={
+              <Suspense fallback={<PageFallback />}>
+                <DashboardPage theme={theme} />
+              </Suspense>
+            }
           />
           <Route
             path="zenno-agent"
-            element={<ZennoAgentRoute theme={theme} />}
+            element={
+              <Suspense fallback={<PageFallback />}>
+                <ZennoAgentRoute theme={theme} />
+              </Suspense>
+            }
           />
-          <Route path="chats" element={<ChatsRoute theme={theme} />} />
-          <Route path="peers" element={<PeersRoute theme={theme} />} />
+          <Route
+            path="chats"
+            element={
+              <Suspense fallback={<PageFallback />}>
+                <ChatsRoute theme={theme} />
+              </Suspense>
+            }
+          />
+          <Route
+            path="peers"
+            element={
+              <Suspense fallback={<PageFallback />}>
+                <PeersRoute theme={theme} />
+              </Suspense>
+            }
+          />
           <Route
             path="peers/profile"
-            element={<PeerProfileRoute theme={theme} />}
+            element={
+              <Suspense fallback={<PageFallback />}>
+                <PeerProfileRoute theme={theme} />
+              </Suspense>
+            }
           />
-          <Route path="profile" element={<ProfileRoute theme={theme} />} />
+          <Route
+            path="profile"
+            element={
+              <Suspense fallback={<PageFallback />}>
+                <ProfileRoute theme={theme} />
+              </Suspense>
+            }
+          />
           <Route
             path="analytics/metrics"
-            element={<MetricsRoute theme={theme} />}
+            element={
+              <Suspense fallback={<PageFallback />}>
+                <MetricsRoute theme={theme} />
+              </Suspense>
+            }
           />
           <Route
             path="analytics/apps-languages"
-            element={<AppLanguagesRoute theme={theme} />}
+            element={
+              <Suspense fallback={<PageFallback />}>
+                <AppLanguagesRoute theme={theme} />
+              </Suspense>
+            }
           />
           <Route
             path="analytics/skills-projects"
-            element={<SkillsProjectsRoute theme={theme} />}
+            element={
+              <Suspense fallback={<PageFallback />}>
+                <SkillsProjectsRoute theme={theme} />
+              </Suspense>
+            }
           />
           <Route
             path="projects/:projectName"
-            element={<ProjectDetailRoute theme={theme} />}
+            element={
+              <Suspense fallback={<PageFallback />}>
+                <ProjectDetailRoute theme={theme} />
+              </Suspense>
+            }
           />
           <Route
             path="notifications"
-            element={<NotificationsPage />}
+            element={
+              <Suspense fallback={<PageFallback />}>
+                <NotificationsPage />
+              </Suspense>
+            }
           />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>

@@ -14,6 +14,7 @@ import { ZennoAgentCard } from "@/components/ZennoAgentCard";
 import { StrongestSkillsCard } from "@/components/StrongestSkillsCard";
 import { RecentProjectsCard } from "@/components/RecentProjectsCard";
 import { type WeekPeriod } from "@/components/WeekToggle";
+import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 
 interface DashboardPageProps {
   theme: "light" | "dark";
@@ -43,6 +44,13 @@ export function DashboardPage({ theme }: DashboardPageProps) {
     })();
     return () => { cancelled = true; };
   }, [firebaseUser, period]);
+
+  // Show full-page skeleton on the very first load (before any data
+  // arrives). Subsequent period switches keep the existing soft-fade
+  // affordance so users don't lose their visual context.
+  if (metricsLoading && !performanceMetrics) {
+    return <DashboardSkeleton theme={theme} />;
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
