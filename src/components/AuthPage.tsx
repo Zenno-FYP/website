@@ -63,33 +63,6 @@ export function AuthPage({ theme, onLogin }: AuthPageProps) {
     }
   }, [firebaseUser, step]);
 
-  // Fetch user profile with backend API after email verification
-  const fetchUserProfile = async (firebaseUser: typeof auth.currentUser) => {
-    if (!firebaseUser?.email) return;
-
-    try {
-      setLoading(true);
-
-      // Call GET /api/v1/user/me to fetch user profile
-      const user = await userService.getProfile();
-
-      setUser(user);
-      setAuthenticated(true);
-      setAuthError(null);
-
-      // Call the onLogin callback if provided
-      if (onLogin) {
-        onLogin();
-      }
-    } catch (error: any) {
-      const message = error.message || "Failed to fetch user profile";
-      setAuthError(message);
-      toast.error(message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Handle profile photo upload
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -221,46 +194,60 @@ export function AuthPage({ theme, onLogin }: AuthPageProps) {
       setLoading(true);
       setAuthError(null);
 
-      // Create Firebase user
+      // Step 1: Create Firebase account
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         formData.email,
         formData.password
       );
 
-      // Set Firebase user in store so API can get the token
-      setFirebaseUser(userCredential.user);
-
-      // Update profile name
+      // Step 2: Set display name (Firebase only, no backend call)
       await updateProfile(userCredential.user, {
         displayName: formData.name,
       });
 
-      // Create user profile in backend
-      await createUserProfile(userCredential.user);
+      // Step 3: Set Firebase user in store FIRST so the API interceptor has a
+      // token. This also triggers the useEffect which shows the verification
+      // card — which is intentional, and allows the Resend button to work.
+      setFirebaseUser(userCredential.user);
 
-      // Send verification email
+      // Step 4: Send verification email BEFORE any backend call.
+      // This ensures the email is dispatched even if profile creation fails.
       await sendEmailVerification(userCredential.user);
 
-      // Sign out via the store so caches + request-cache are invalidated; this also
-      // clears firebaseUser, so no follow-up request fires with the unverified token.
-      await useAuthStore.getState().logout();
+      // Step 5: Try to create the backend profile. The email-verified guard
+      // will reject this (unverified token → 401). We swallow that error and
+      // defer profile creation to the first verified sign-in, which uses
+      // syncOrCreateProfile and creates the profile if it doesn't yet exist.
+      try {
+        await createUserProfile(userCredential.user);
+      } catch {
+        // Guard rejected the unverified token — profile will be created on
+        // first verified sign-in via syncOrCreateProfile. Intentionally silent.
+      }
 
-      toast.success("Account created successfully! 🎉", {
-        description: `Verification link sent to ${formData.email}. Please check your inbox and verify your email to sign in.`,
-        duration: 5000, // Show for 5 seconds
+      // Step 6: Do NOT sign out here. Keeping the (unverified) Firebase session
+      // lets the verification card display the user's email address and lets the
+      // Resend button call sendEmailVerification without re-authenticating.
+      // The session is cleared when the user clicks "Back to Sign In".
+
+      toast.success("Verification email sent! 🎉", {
+        description: `Check ${formData.email} for the link. Verify your email then sign back in.`,
+        duration: 6000,
       });
 
-      // Clear form and stay on signin (don't change step)
+      // Clear the form fields; the verification card stays visible (step was
+      // set to "verify-email" by the useEffect above).
       setFormData({ name: "", email: "", password: "" });
       setProfilePhoto(null);
       setProfilePhotoPreview(null);
+      // Pre-select the Login tab so that after "Back to Sign In" the user
+      // lands on the login form, not the sign-up form.
       setIsSignIn(true);
     } catch (error: any) {
       const message = getFirebaseErrorMessage(error);
       setAuthError(message);
       toast.error(message);
-      // Clear Firebase user on error
       setFirebaseUser(null);
     } finally {
       setLoading(false);
@@ -288,16 +275,32 @@ export function AuthPage({ theme, onLogin }: AuthPageProps) {
 
       // Check if email is verified
       if (!userCredential.user.emailVerified) {
-        // Email not verified - show verification card
+        // Email not verified — show verification card so user can resend
         setFirebaseUser(userCredential.user);
         setStep("verify-email");
         toast.warning("Email not verified", {
           description: "Check your email for the verification link.",
         });
       } else {
-        // Email is verified - proceed with fetching user profile
+        // Email is verified — sync or create the backend profile.
+        // syncOrCreateProfile (PUT /user/me) handles both first-time sign-in
+        // (profile never created during signup) and returning users gracefully.
         setFirebaseUser(userCredential.user);
-        await fetchUserProfile(userCredential.user);
+        try {
+          setLoading(true);
+          const user = await userService.syncOrCreateProfile({
+            email: userCredential.user.email!,
+            name: userCredential.user.displayName || "User",
+          });
+          setUser(user);
+          setAuthenticated(true);
+          setAuthError(null);
+          if (onLogin) onLogin();
+        } catch (profileError: any) {
+          const message = profileError.message || "Failed to load profile";
+          setAuthError(message);
+          toast.error(message);
+        }
       }
 
       // Clear form
@@ -356,7 +359,14 @@ export function AuthPage({ theme, onLogin }: AuthPageProps) {
     case "verify-email":
       return (
         <>
-          <EmailVerificationCard onBackToSignIn={() => setStep("signin")} />
+          <EmailVerificationCard
+            onBackToSignIn={() => {
+              // Ensure the Login tab is active (not Sign-Up) when returning to
+              // the auth form, regardless of which tab was open during signup.
+              setIsSignIn(true);
+              setStep("signin");
+            }}
+          />
           <Toaster position="top-right" richColors />
         </>
       );
