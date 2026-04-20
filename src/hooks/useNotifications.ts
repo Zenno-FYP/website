@@ -60,9 +60,7 @@ export function useNotifications() {
     void refresh();
   }, [refresh]);
 
-  // Foreground FCM messages: show a toast for the incoming push, then re-sync
-  // from the backend so the notification list reflects the authoritative
-  // server-side records (correct user_id, _id, timestamps, ordering).
+  // Foreground FCM: toast + re-sync from the API for authoritative rows.
   useEffect(() => {
     if (!firebaseUser) return;
 

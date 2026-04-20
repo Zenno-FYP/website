@@ -50,8 +50,8 @@ export function useFcmToken(pushEnabled: boolean) {
         await registerFcmDevice(token, 'web', navigator.userAgent.slice(0, 80));
         tokenRef.current = token;
       }
-    } catch (err) {
-      console.warn('FCM token registration failed', err);
+    } catch {
+      // best-effort registration
     }
   }, []);
 
