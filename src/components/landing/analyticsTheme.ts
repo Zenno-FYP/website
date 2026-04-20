@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Chrome, Code, Terminal } from "lucide-react";
+import { Bot, Chrome, Cloud, Code, Database, Terminal } from "lucide-react";
 
 /**
  * Category colors — same as DeveloperTrendsCard / MetricsDetailPage (`TREND_FILTERS`)
@@ -40,13 +40,31 @@ export function getAppIconForName(appName: string): LucideIcon {
   const n = appName.toLowerCase();
   if (n.includes("code") || n.includes("vscode") || n.includes("vs ")) return Code;
   if (n.includes("chrome") || n.includes("firefox") || n.includes("edge") || n.includes("brave")) return Chrome;
+  if (n.includes("chatgpt") || n.includes("chat gpt") || n.includes("openai")) return Bot;
+  if (n.includes("mongo")) return Database;
+  if (n.includes("aws") || n.includes("amazon") || n.includes("console.aws")) return Cloud;
   if (n.includes("terminal") || n.includes("cmd") || n.includes("powershell")) return Terminal;
   return Code;
 }
 
-/** Language share bars — distinct, dashboard-adjacent (not category colors) */
+/**
+ * Landing-only language bar colors: distinct hues so segments read clearly on dark backgrounds.
+ */
+export const LANDING_LANGUAGE_COLORS: Record<string, string> = {
+  TypeScript: "#3B82F6",
+  Dart: "#14B8A6",
+  Python: "#F59E0B",
+  /** Docker Compose, GitHub Actions, CI — common alongside TS/Python in this repo */
+  YAML: "#A855F7",
+};
+
+/**
+ * Rough language mix for the Zenno monorepo: TS (web + Nest API), Dart (Flutter), Python (NLP),
+ * YAML (infra & workflows).
+ */
 export const LANGUAGE_MOCK = [
-  { name: "TypeScript", value: 62, bar: "#5B6FD8" },
-  { name: "Python", value: 24, bar: "#4ECDC4" },
-  { name: "Go", value: 14, bar: "#7C4DFF" },
+  { name: "TypeScript", value: 36, bar: LANDING_LANGUAGE_COLORS.TypeScript },
+  { name: "Dart", value: 28, bar: LANDING_LANGUAGE_COLORS.Dart },
+  { name: "Python", value: 22, bar: LANDING_LANGUAGE_COLORS.Python },
+  { name: "YAML", value: 14, bar: LANDING_LANGUAGE_COLORS.YAML },
 ] as const;

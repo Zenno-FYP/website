@@ -6,6 +6,7 @@ import { CorePlatform } from './CorePlatform';
 import { FeatureDeepDive } from './FeatureDeepDive';
 import { HowItWorks } from './HowItWorks';
 import { WhyDifferent } from './WhyDifferent';
+import { LandingProfilePreview } from './LandingProfilePreview';
 import { FinalCTA } from './FinalCTA';
 import { Footer } from './Footer';
 
@@ -21,6 +22,7 @@ export function LandingPage() {
       <ProblemToOutcome />
       <CorePlatform />
       <FeatureDeepDive />
+      <LandingProfilePreview />
       <HowItWorks />
       <WhyDifferent />
       <FinalCTA />

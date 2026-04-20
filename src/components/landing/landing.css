@@ -113,6 +113,11 @@
   }
 }
 
+/* Equal-height columns (e.g. profile preview cards) — default .landing-grid-2 uses align-items: center */
+.landing-grid-2-stretch {
+  align-items: stretch;
+}
+
 .landing-grid-3 {
   display: grid;
   gap: 1.25rem;

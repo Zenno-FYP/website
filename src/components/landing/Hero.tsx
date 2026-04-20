@@ -2,15 +2,12 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowRight, Check } from 'lucide-react';
 import { GlassCard } from './GlassCard';
-import { BarChart, Bar, XAxis, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { ResponsiveContainer, LineChart, Line } from 'recharts';
+import { LANDING_DEVELOPER_TRENDS_WEEK } from './landingChartData';
+import { LandingDeveloperTrendsChart } from './LandingDeveloperTrendsChart';
+import { CATEGORY_COLORS } from './analyticsTheme';
 
-const flowData = [
-  { id: 'mon', day: 'Mon', hours: 6.5 },
-  { id: 'tue', day: 'Tue', hours: 7.2 },
-  { id: 'wed', day: 'Wed', hours: 5.8 },
-  { id: 'thu', day: 'Thu', hours: 8.1 },
-  { id: 'fri', day: 'Fri', hours: 6.9 },
-];
+const heroFlowWeekTotal = LANDING_DEVELOPER_TRENDS_WEEK.reduce((a, p) => a + p.flow_hours, 0);
 
 const trendData = [
   { id: 'w1', week: 'W1', value: 32 },
@@ -162,7 +159,7 @@ export function Hero() {
                       color: '#F5F7FA',
                       fontFamily: 'Space Grotesk, sans-serif'
                     }}>
-                      34.5h
+                      {heroFlowWeekTotal.toFixed(1)}h
                     </div>
                   </div>
                   <div className="px-3 py-1 rounded-full" style={{
@@ -173,12 +170,12 @@ export function Hero() {
                     +12%
                   </div>
                 </div>
-                <ResponsiveContainer width="100%" height={120}>
-                  <BarChart data={flowData}>
-                    <XAxis dataKey="day" stroke="#6F7885" style={{ fontSize: '0.75rem' }} />
-                    <Bar dataKey="hours" fill="#5B6FD8" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <LandingDeveloperTrendsChart
+                  data={LANDING_DEVELOPER_TRENDS_WEEK}
+                  height={140}
+                  mode="flow_only"
+                  showLegend={false}
+                />
               </GlassCard>
 
               {/* Floating mini cards */}
@@ -218,7 +215,7 @@ export function Hero() {
                         <Line
                           type="monotone"
                           dataKey="value"
-                          stroke="#7C4DFF"
+                          stroke={CATEGORY_COLORS.flow}
                           strokeWidth={2}
                           dot={false}
                         />

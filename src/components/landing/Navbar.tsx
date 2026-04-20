@@ -35,6 +35,13 @@ export function Navbar() {
           >
             How It Works
           </a>
+          <a
+            href="#profile"
+            className="transition-colors hover:text-purple-400"
+            style={{ fontSize: '0.9375rem', color: '#A7B0BE' }}
+          >
+            Profile
+          </a>
         </div>
 
         {/* CTA Button */}

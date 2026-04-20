@@ -5,6 +5,7 @@ import logo from "@/assets/logo.png";
 /** Same-page anchors so they work on both `/` and `/home` without sending logged-in users to `/`. */
 const productAnchorLinks = [
   { label: "Features", href: "#features" },
+  { label: "Profile", href: "#profile" },
   { label: "How It Works", href: "#how-it-works" },
 ] as const;
 

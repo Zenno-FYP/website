@@ -1,30 +1,29 @@
 import { motion } from "motion/react";
 import { GlassCard } from "./GlassCard";
-import { Bar, BarChart, ResponsiveContainer, XAxis } from "recharts";
-import { Bell } from "lucide-react";
+import { Bell, Bot } from "lucide-react";
+import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { CATEGORY_COLORS, getAppIconForName, getAppRowVisual } from "./analyticsTheme";
-
-const weekData = [
-  { id: "mon", day: "Mon", flow: 6.5, debugging: 2.1, research: 1.3, communication: 0.7, distracted: 0.4 },
-  { id: "tue", day: "Tue", flow: 7.2, debugging: 1.8, research: 1.5, communication: 0.6, distracted: 0.3 },
-  { id: "wed", day: "Wed", flow: 5.8, debugging: 2.5, research: 2.0, communication: 0.9, distracted: 0.5 },
-  { id: "thu", day: "Thu", flow: 8.1, debugging: 1.5, research: 1.2, communication: 0.5, distracted: 0.2 },
-  { id: "fri", day: "Fri", flow: 6.9, debugging: 2.0, research: 1.8, communication: 0.8, distracted: 0.4 },
-];
+import { LANDING_DEVELOPER_TRENDS_WEEK } from "./landingChartData";
+import { LandingDeveloperTrendsChart } from "./LandingDeveloperTrendsChart";
 
 const topApps = [
-  { name: "Visual Studio Code", hours: 42.3, percent: 71 },
-  { name: "Google Chrome", hours: 12.5, percent: 21 },
-  { name: "Windows Terminal", hours: 4.8, percent: 8 },
+  { name: "Visual Studio Code", hours: 32.0, percent: 32 },
+  { name: "Brave", hours: 18.0, percent: 22 },
+  { name: "MongoDB Compass", hours: 12.5, percent: 16 },
+  { name: "AWS Console", hours: 12.5, percent: 16 },
+  { name: "ChatGPT", hours: 10.0, percent: 14 },
 ];
 
-const patternStats = [
-  { label: "Flow", value: "34.5h", color: CATEGORY_COLORS.flow },
-  { label: "Debugging", value: "9.9h", color: CATEGORY_COLORS.debugging },
-  { label: "Research", value: "7.8h", color: CATEGORY_COLORS.research },
-  { label: "Communication", value: "4.2h", color: CATEGORY_COLORS.communication },
-  { label: "Distracted", value: "2.1h", color: CATEGORY_COLORS.distracted },
-];
+/** Same illustrative week split as before — now as pie slices (hours) */
+const CATEGORY_PIE_HOURS = [
+  { name: "Flow", hours: 34.5, fill: CATEGORY_COLORS.flow },
+  { name: "Debugging", hours: 9.9, fill: CATEGORY_COLORS.debugging },
+  { name: "Research", hours: 7.8, fill: CATEGORY_COLORS.research },
+  { name: "Communication", hours: 4.2, fill: CATEGORY_COLORS.communication },
+  { name: "Distracted", hours: 2.1, fill: CATEGORY_COLORS.distracted },
+] as const;
+
+const categoryWeekTotal = CATEGORY_PIE_HOURS.reduce((a, x) => a + x.hours, 0);
 
 const agentPrefs = [
   {
@@ -83,36 +82,63 @@ export function FeatureDeepDive() {
             >
               See your work patterns
             </h2>
-            <p style={{ fontSize: "1.125rem", color: "#A7B0BE", lineHeight: "1.7", marginBottom: "2rem" }}>
+            <p style={{ fontSize: "1.125rem", color: "#A7B0BE", lineHeight: "1.7", marginBottom: "1.5rem" }}>
               Zenno labels active time the same way everywhere: flow, debugging, research, communication, and
               distracted hours—so the landing visuals match Developer Trends on the web and your analytics on mobile.
             </p>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(9.5rem, 1fr))",
-                gap: "0.75rem",
-              }}
-            >
-              {patternStats.map((stat) => (
-                <GlassCard key={stat.label} className="p-4">
-                  <div style={{ color: "#6F7885", fontSize: "0.8125rem", marginBottom: "0.35rem" }}>
-                    {stat.label}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "1.5rem",
-                      fontWeight: 700,
-                      color: stat.color,
-                      fontFamily: "Space Grotesk, sans-serif",
-                    }}
-                  >
-                    {stat.value}
-                  </div>
-                </GlassCard>
-              ))}
-            </div>
+            <GlassCard className="p-6">
+              <div style={{ color: "#6F7885", fontSize: "0.875rem", marginBottom: "0.5rem" }}>This week · hours by category</div>
+              <div className="flex flex-wrap items-end justify-between gap-4 mb-2">
+                <span
+                  style={{
+                    fontSize: "1.75rem",
+                    fontWeight: 700,
+                    color: "#F5F7FA",
+                    fontFamily: "Space Grotesk, sans-serif",
+                  }}
+                >
+                  {categoryWeekTotal.toFixed(1)}h
+                </span>
+                <span style={{ fontSize: "0.8125rem", color: "#6F7885" }}>Tracked active time</span>
+              </div>
+              <div style={{ width: "100%", height: 300 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={CATEGORY_PIE_HOURS.map((d) => ({ name: d.name, value: d.hours }))}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius="58%"
+                      outerRadius="88%"
+                      paddingAngle={2}
+                      stroke="rgba(15, 15, 20, 0.9)"
+                      strokeWidth={2}
+                    >
+                      {CATEGORY_PIE_HOURS.map((entry) => (
+                        <Cell key={entry.name} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: number) => [`${value.toFixed(1)}h`, "Time"]}
+                      contentStyle={{
+                        backgroundColor: "rgba(17, 24, 39, 0.95)",
+                        border: "none",
+                        borderRadius: "12px",
+                        boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
+                        color: "#F3F4F6",
+                      }}
+                    />
+                    <Legend
+                      wrapperStyle={{ fontSize: "12px", color: "#9CA3AF", paddingTop: "8px" }}
+                      formatter={(value) => <span style={{ color: "#A7B0BE" }}>{value}</span>}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </GlassCard>
           </motion.div>
 
           <motion.div
@@ -122,24 +148,11 @@ export function FeatureDeepDive() {
             transition={{ duration: 0.8 }}
           >
             <GlassCard className="p-8">
-              <div style={{ color: "#6F7885", fontSize: "0.875rem", marginBottom: "1rem" }}>
-                Developer Trends · weekly hours
-              </div>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={weekData}>
-                  <XAxis dataKey="day" stroke="#6F7885" style={{ fontSize: "0.75rem" }} />
-                  <Bar dataKey="flow" stackId="a" fill={CATEGORY_COLORS.flow} radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="debugging" stackId="a" fill={CATEGORY_COLORS.debugging} radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="research" stackId="a" fill={CATEGORY_COLORS.research} radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="communication" stackId="a" fill={CATEGORY_COLORS.communication} radius={[0, 0, 0, 0]} />
-                  <Bar
-                    dataKey="distracted"
-                    stackId="a"
-                    fill={CATEGORY_COLORS.distracted}
-                    radius={[8, 8, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              <LandingDeveloperTrendsChart
+                data={LANDING_DEVELOPER_TRENDS_WEEK}
+                height={300}
+                title="Developer Trends · weekly hours"
+              />
             </GlassCard>
           </motion.div>
         </div>
@@ -208,41 +221,6 @@ export function FeatureDeepDive() {
                   );
                 })}
               </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-                  gap: "1rem",
-                  alignItems: "center",
-                  marginTop: "2rem",
-                  paddingTop: "2rem",
-                  borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-                  width: "100%",
-                }}
-              >
-                {[
-                  { label: "Languages", value: "8" },
-                  { label: "Projects", value: "5" },
-                  { label: "Files", value: "342" },
-                ].map((stat) => (
-                  <div
-                    key={stat.label}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "flex-start",
-                      gap: "0.25rem",
-                      textAlign: "center",
-                      minWidth: 0,
-                    }}
-                  >
-                    <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "#F5F7FA" }}>{stat.value}</div>
-                    <div style={{ color: "#6F7885", fontSize: "0.75rem" }}>{stat.label}</div>
-                  </div>
-                ))}
-              </div>
             </GlassCard>
           </motion.div>
 
@@ -266,7 +244,7 @@ export function FeatureDeepDive() {
             </h2>
             <p style={{ fontSize: "1.125rem", color: "#A7B0BE", lineHeight: "1.7" }}>
               The same top-apps treatment as the dashboard and mobile: hashed colours per app, hours, and share of
-              focus. Below that, language and project counts mirror what you see in Apps &amp; Languages.
+              focus.
             </p>
           </motion.div>
         </div>
@@ -279,21 +257,34 @@ export function FeatureDeepDive() {
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
-            <h2
-              style={{
-                fontSize: "2.5rem",
-                fontWeight: 700,
-                color: "#F5F7FA",
-                fontFamily: "Space Grotesk, sans-serif",
-                marginBottom: "1.5rem",
-              }}
-            >
-              Nudges that follow your Zenno Agent settings
-            </h2>
-            <p style={{ fontSize: "1.125rem", color: "#A7B0BE", lineHeight: "1.7", marginBottom: "2rem" }}>
-              Schedules, focus styles, and wellbeing goals come straight from the agent screen—so reminders line up
-              with how you actually work, not a generic template.
-            </p>
+            <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-start">
+              <div
+                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl shadow-xl"
+                style={{
+                  background: "linear-gradient(to bottom right, #7C4DFF, #5B6FD8)",
+                }}
+                aria-hidden
+              >
+                <Bot className="w-8 h-8 text-white drop-shadow-lg" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2
+                  style={{
+                    fontSize: "2.5rem",
+                    fontWeight: 700,
+                    color: "#F5F7FA",
+                    fontFamily: "Space Grotesk, sans-serif",
+                    marginBottom: "1rem",
+                  }}
+                >
+                  Nudges that follow your Zenno Agent settings
+                </h2>
+                <p style={{ fontSize: "1.125rem", color: "#A7B0BE", lineHeight: "1.7", margin: 0 }}>
+                  Schedules, focus styles, and wellbeing goals come straight from the agent screen—so reminders line up
+                  with how you actually work, not a generic template.
+                </p>
+              </div>
+            </div>
 
             <div className="space-y-3">
               {agentPrefs.map((pref) => (
@@ -324,6 +315,33 @@ export function FeatureDeepDive() {
             transition={{ duration: 0.8 }}
             className="relative"
           >
+            <div className="mb-6 flex items-start gap-4">
+              <div
+                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl shadow-xl"
+                style={{
+                  background: "linear-gradient(to bottom right, #7C4DFF, #5B6FD8)",
+                }}
+                aria-hidden
+              >
+                <Bot className="w-8 h-8 text-white drop-shadow-lg" />
+              </div>
+              <div className="min-w-0 pt-1">
+                <div
+                  style={{
+                    fontSize: "1.125rem",
+                    fontWeight: 600,
+                    color: "#F5F7FA",
+                    fontFamily: "Space Grotesk, sans-serif",
+                    marginBottom: "0.25rem",
+                  }}
+                >
+                  Nudge feed
+                </div>
+                <p style={{ fontSize: "0.875rem", color: "#6F7885", lineHeight: "1.5", margin: 0 }}>
+                  Examples from a typical day—timing and tone follow your agent settings.
+                </p>
+              </div>
+            </div>
             <div className="space-y-4">
               {nudgeExamples.map((nudge, index) => (
                 <motion.div
