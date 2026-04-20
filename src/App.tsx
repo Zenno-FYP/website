@@ -6,6 +6,7 @@ import { useSyncProfileOnLogin } from "@/hooks/useSyncProfileOnLogin";
 import { needsEmailVerification } from "@/lib/authHelpers";
 import { MainLayout } from "@/layouts/MainLayout";
 import { AuthPage } from "@/components/AuthPage";
+import { LandingPage } from "@/components/landing/LandingPage";
 
 // Lazy-load heavy authenticated pages so the initial sign-in bundle stays small.
 const DashboardPage = lazy(() =>
@@ -48,6 +49,19 @@ const NotificationsPage = lazy(() =>
     default: m.NotificationsPage,
   })),
 );
+const PrivacyPolicyPage = lazy(() =>
+  import("@/pages/PrivacyPolicyPage").then((m) => ({
+    default: m.PrivacyPolicyPage,
+  })),
+);
+const TermsOfServicePage = lazy(() =>
+  import("@/pages/TermsOfServicePage").then((m) => ({
+    default: m.TermsOfServicePage,
+  })),
+);
+const SecurityPage = lazy(() =>
+  import("@/pages/SecurityPage").then((m) => ({ default: m.SecurityPage })),
+);
 
 function PageFallback() {
   return (
@@ -55,6 +69,30 @@ function PageFallback() {
       <div className="h-8 w-8 rounded-full border-2 border-purple-500/30 border-t-purple-500 animate-spin" />
     </div>
   );
+}
+
+function LandingPageRoute() {
+  const isCheckingAuth = useIsCheckingAuth();
+  const firebaseUser = useFirebaseUser();
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f] text-white">
+        Loading…
+      </div>
+    );
+  }
+  if (firebaseUser) {
+    if (needsEmailVerification(firebaseUser)) {
+      return <Navigate to="/auth" replace />;
+    }
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <LandingPage />;
+}
+
+/** Marketing home — same UI as `/`, but always shown (logged-in users can open from app header). */
+function PublicLandingRoute() {
+  return <LandingPage />;
 }
 
 function AuthPageRoute({ theme }: { theme: "light" | "dark" }) {
@@ -221,13 +259,37 @@ export default function App() {
 
   return (
     <Routes>
+      <Route path="/" element={<LandingPageRoute />} />
+      <Route path="/home" element={<PublicLandingRoute />} />
       <Route path="/auth" element={<AuthPageRoute theme={theme} />} />
+      <Route
+        path="/privacy"
+        element={
+          <Suspense fallback={<PageFallback />}>
+            <PrivacyPolicyPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path="/terms"
+        element={
+          <Suspense fallback={<PageFallback />}>
+            <TermsOfServicePage />
+          </Suspense>
+        }
+      />
+      <Route
+        path="/security"
+        element={
+          <Suspense fallback={<PageFallback />}>
+            <SecurityPage />
+          </Suspense>
+        }
+      />
       <Route element={<RequireAuth />}>
         <Route
-          path="/"
           element={<MainLayout theme={theme} onThemeChange={setTheme} />}
         >
-          <Route index element={<Navigate to="/dashboard" replace />} />
           <Route
             path="dashboard"
             element={

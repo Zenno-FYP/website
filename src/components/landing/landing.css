@@ -1,0 +1,253 @@
+/**
+ * Landing page spacing — the main `index.css` Tailwind bundle only ships a small
+ * subset of utilities (e.g. py-* stops at py-8, gap-* at gap-8). Large classes like
+ * py-52 or gap-12 are not in the bundle, so they never applied. These classes use
+ * plain CSS so spacing is guaranteed to show.
+ */
+
+.landing-section {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  padding-top: 2.75rem;
+  padding-bottom: 2.75rem;
+}
+
+@media (min-width: 768px) {
+  .landing-section {
+    padding-top: 3.25rem;
+    padding-bottom: 3.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .landing-section {
+    padding-top: 3.75rem;
+    padding-bottom: 3.75rem;
+  }
+}
+
+/* Hero: extra top padding so content clears the fixed navbar */
+.landing-hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  padding-top: 8rem;
+  padding-bottom: 3rem;
+}
+
+@media (min-width: 768px) {
+  .landing-hero {
+    padding-top: 9rem;
+    padding-bottom: 3.5rem;
+  }
+}
+
+.landing-social {
+  padding: 2.25rem 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@media (min-width: 768px) {
+  .landing-social {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+}
+
+.landing-footer {
+  padding: 2.25rem 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@media (min-width: 768px) {
+  .landing-footer {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+}
+
+/* Vertical stack between major blocks inside FeatureDeepDive */
+.landing-deep-dive-stack > * + * {
+  margin-top: 2.5rem;
+}
+
+@media (min-width: 1024px) {
+  .landing-deep-dive-stack > * + * {
+    margin-top: 3rem;
+  }
+}
+
+/* Grid / flex gaps missing from Tailwind bundle (only gap-8 exists) */
+.landing-gap-12 {
+  gap: 2.25rem;
+}
+
+.landing-hero-columns {
+  display: grid;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .landing-hero-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2.25rem;
+  }
+}
+
+.landing-grid-2 {
+  display: grid;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .landing-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Equal-height columns (e.g. profile preview cards) — default .landing-grid-2 uses align-items: center */
+.landing-grid-2-stretch {
+  align-items: stretch;
+}
+
+.landing-grid-3 {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .landing-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* How it works: 1 col → 2 cols (md) → 4 cols (lg) */
+.landing-grid-4 {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .landing-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .landing-grid-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* FeatureDeepDive: swap column order on small screens */
+.landing-fd-swap-a {
+  order: 2;
+}
+
+@media (min-width: 1024px) {
+  .landing-fd-swap-a {
+    order: 1;
+  }
+}
+
+.landing-fd-swap-b {
+  order: 1;
+}
+
+@media (min-width: 1024px) {
+  .landing-fd-swap-b {
+    order: 2;
+  }
+}
+
+/* Margins missing from bundle (mb-* stops around mb-8) */
+.landing-mb-heading {
+  margin-bottom: 1.75rem;
+}
+
+.landing-mb-block {
+  margin-bottom: 1.5rem;
+}
+
+.landing-mb-section {
+  margin-bottom: 2rem;
+}
+
+/* Glass cards: smooth lift on hover (transform only — box-shadow stays inline on the component) */
+.landing-glass-surface {
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.landing-glass-hover:hover {
+  transform: translateY(-3px);
+}
+
+.landing-footer-grid {
+  display: grid;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .landing-footer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Brand (2 cols) + Product + Legal */
+@media (min-width: 1024px) {
+  .landing-footer-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* How It Works: always horizontal — scroll on small viewports, centered on lg+ */
+.how-it-works-row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: flex-start;
+  width: 100%;
+  gap: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.5rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
+.how-it-works-row::-webkit-scrollbar {
+  height: 6px;
+}
+
+.how-it-works-row::-webkit-scrollbar-thumb {
+  background: rgba(124, 77, 255, 0.35);
+  border-radius: 3px;
+}
+
+.how-it-works-step {
+  flex: 0 0 min(85vw, 17rem);
+  max-width: 17rem;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .how-it-works-row {
+    justify-content: center;
+    overflow-x: visible;
+    padding-bottom: 0;
+  }
+
+  .how-it-works-step {
+    flex: 1 1 0;
+    max-width: 17rem;
+  }
+}
