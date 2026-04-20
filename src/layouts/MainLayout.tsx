@@ -83,6 +83,11 @@ export function MainLayout({ theme, onThemeChange }: MainLayoutProps) {
           gradient: "from-[#5B6FD8] to-[#7C4DFF]",
           icon: <BarChart3 className="w-5 h-5 text-white" />,
         };
+      case "test":
+        return {
+          gradient: "from-emerald-500 to-teal-600",
+          icon: <Bell className="w-5 h-5 text-white" />,
+        };
       default:
         return {
           gradient: "from-purple-500 to-purple-600",

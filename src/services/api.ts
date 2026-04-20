@@ -690,7 +690,7 @@ export async function markChatRead(conversationId: string): Promise<void> {
 export interface NotificationItem {
   _id: string;
   user_id: string;
-  type: 'chat_message' | 'new_project' | 'daily_digest';
+  type: 'chat_message' | 'new_project' | 'daily_digest' | 'test';
   title: string;
   body: string;
   data: Record<string, string>;

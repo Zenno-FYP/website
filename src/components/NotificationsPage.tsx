@@ -26,6 +26,8 @@ function notifIcon(type: string) {
       return { gradient: "from-[#4ECDC4] to-[#44A6A0]", icon: <FolderPlus className="w-5 h-5 text-white" /> };
     case "daily_digest":
       return { gradient: "from-[#5B6FD8] to-[#7C4DFF]", icon: <BarChart3 className="w-5 h-5 text-white" /> };
+    case "test":
+      return { gradient: "from-emerald-500 to-teal-600", icon: <Bell className="w-5 h-5 text-white" /> };
     default:
       return { gradient: "from-purple-500 to-purple-600", icon: <Bell className="w-5 h-5 text-white" /> };
   }
@@ -97,6 +99,8 @@ export function NotificationsPage() {
       } else {
         navigate("/dashboard");
       }
+    } else if (n.type === "test") {
+      navigate("/notifications");
     } else {
       navigate("/dashboard");
     }
