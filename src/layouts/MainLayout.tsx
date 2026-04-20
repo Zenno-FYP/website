@@ -187,9 +187,9 @@ export function MainLayout({ theme, onThemeChange }: MainLayoutProps) {
               <div className="flex-shrink-0">
                 <button
                   type="button"
-                  aria-label="Go to dashboard"
+                  aria-label="Go to home page"
                   className="relative group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2 rounded-xl"
-                  onClick={() => navigate("/dashboard")}
+                  onClick={() => navigate("/home")}
                 >
                   <div className="w-12 h-12 rounded-xl overflow-hidden shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all duration-300">
                     <img
