@@ -4,7 +4,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Card } from "./ui/card";
-import { Sparkles, Mail, Lock, User, Eye, EyeOff, X, Camera, Github } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff, X, Camera, Github } from "lucide-react";
 import { auth } from "@/lib/firebase";
 import {
   createUserWithEmailAndPassword,
@@ -20,6 +20,7 @@ import { userService } from "@/services/userService";
 import { getFirebaseErrorMessage } from "@/services/errorHandler";
 import { toast, Toaster } from "sonner";
 import { EmailVerificationCard } from "./EmailVerificationCard";
+import logo from "@/assets/logo.png";
 
 type AuthStep = "signin" | "signup" | "verify-email" | "forgot-password";
 
@@ -550,10 +551,13 @@ export function AuthPage({ theme, onLogin }: AuthPageProps) {
             {/* Logo */}
             <div className="flex justify-center mb-6">
               <div className="relative group">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#5B6FD8] to-[#7C4DFF] flex items-center justify-center shadow-2xl group-hover:shadow-purple-500/30 group-hover:scale-105 transition-all duration-300">
-                  <Sparkles className="w-8 h-8 text-white drop-shadow-md" />
+                <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-2xl group-hover:shadow-purple-500/30 group-hover:scale-105 transition-all duration-300">
+                  <img
+                    src={logo}
+                    alt="Zenno logo"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/20 to-transparent opacity-50"></div>
               </div>
             </div>
 

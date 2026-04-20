@@ -20,7 +20,6 @@ import {
   Bell,
   MessageCircle,
   Settings,
-  Sparkles,
   LogOut,
   UserCircle,
   UsersRound,
@@ -28,6 +27,7 @@ import {
   FolderPlus,
   BarChart3,
 } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 interface MainLayoutProps {
   theme: "light" | "dark";
@@ -191,10 +191,13 @@ export function MainLayout({ theme, onThemeChange }: MainLayoutProps) {
                   className="relative group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2 rounded-xl"
                   onClick={() => navigate("/dashboard")}
                 >
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#5B6FD8] to-[#7C4DFF] flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all duration-300">
-                    <Sparkles className="w-6 h-6 text-white drop-shadow-md" />
+                  <div className="w-12 h-12 rounded-xl overflow-hidden shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all duration-300">
+                    <img
+                      src={logo}
+                      alt="Zenno logo"
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/20 to-transparent opacity-50" />
                 </button>
               </div>
 
@@ -678,3 +681,4 @@ export function MainLayout({ theme, onThemeChange }: MainLayoutProps) {
     </div>
   );
 }
+
