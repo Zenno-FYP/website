@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import { motion } from "motion/react";
 import { Monitor, BarChart2, LayoutDashboard, Sparkles } from "lucide-react";
 import { GlassCard } from "./GlassCard";
+import { fadeUp, landingViewport, staggerDelay } from "./landingMotion";
 
 const steps = [
   {
@@ -109,10 +110,10 @@ export function HowItWorks() {
     >
       <div className="max-w-7xl mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 22 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7 }}
+          viewport={landingViewport}
+          transition={fadeUp(0.82, 0)}
           className="text-center landing-mb-heading"
         >
           <h2
@@ -146,10 +147,10 @@ export function HowItWorks() {
             <Fragment key={step.title}>
               <motion.div
                 className="how-it-works-step"
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.06 }}
+                viewport={landingViewport}
+                transition={fadeUp(0.72, staggerDelay(index, 0.07))}
               >
                 <StepCard step={step} />
               </motion.div>

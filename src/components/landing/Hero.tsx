@@ -6,6 +6,7 @@ import { ResponsiveContainer, LineChart, Line } from 'recharts';
 import { LANDING_DEVELOPER_TRENDS_WEEK } from './landingChartData';
 import { LandingDeveloperTrendsChart } from './LandingDeveloperTrendsChart';
 import { CATEGORY_COLORS } from './analyticsTheme';
+import { fadeUp } from './landingMotion';
 
 const heroFlowWeekTotal = LANDING_DEVELOPER_TRENDS_WEEK.reduce((a, p) => a + p.flow_hours, 0);
 
@@ -31,9 +32,9 @@ export function Hero() {
             y: [0, -30, 0],
           }}
           transition={{
-            duration: 20,
+            duration: 22,
             repeat: Infinity,
-            ease: "easeInOut"
+            ease: "easeInOut",
           }}
         />
         <motion.div
@@ -44,9 +45,9 @@ export function Hero() {
             y: [0, 50, 0],
           }}
           transition={{
-            duration: 25,
+            duration: 28,
             repeat: Infinity,
-            ease: "easeInOut"
+            ease: "easeInOut",
           }}
         />
       </div>
@@ -55,9 +56,9 @@ export function Hero() {
         <div className="landing-hero-columns w-full">
           {/* Left side */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 22 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
+            transition={fadeUp(0.88, 0.14)}
           >
             <h1
               className="mb-6 tracking-tight"
@@ -139,9 +140,9 @@ export function Hero() {
 
           {/* Right side - Dashboard mockup */}
           <motion.div
-            initial={{ opacity: 0, y: 50, rotateX: 15 }}
+            initial={{ opacity: 0, y: 36, rotateX: 12 }}
             animate={{ opacity: 1, y: 0, rotateX: 0 }}
-            transition={{ duration: 1, delay: 0.4 }}
+            transition={fadeUp(1.05, 0.32)}
             className="relative"
             style={{ perspective: '1000px' }}
           >
@@ -181,9 +182,9 @@ export function Hero() {
               {/* Floating mini cards */}
               <div className="grid grid-cols-2 gap-4">
                 <motion.div
-                  initial={{ opacity: 0, x: -20 }}
+                  initial={{ opacity: 0, x: -16 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.8, delay: 0.8 }}
+                  transition={fadeUp(0.82, 0.72)}
                 >
                   <GlassCard className="p-4">
                     <div style={{ color: '#6F7885', fontSize: '0.75rem', marginBottom: '0.5rem' }}>
@@ -199,9 +200,9 @@ export function Hero() {
                 </motion.div>
 
                 <motion.div
-                  initial={{ opacity: 0, x: 20 }}
+                  initial={{ opacity: 0, x: 16 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.8, delay: 0.9 }}
+                  transition={fadeUp(0.82, 0.82)}
                 >
                   <GlassCard className="p-4">
                     <div style={{ color: '#6F7885', fontSize: '0.75rem', marginBottom: '0.5rem' }}>
@@ -218,6 +219,9 @@ export function Hero() {
                           stroke={CATEGORY_COLORS.flow}
                           strokeWidth={2}
                           dot={false}
+                          isAnimationActive
+                          animationDuration={1100}
+                          animationEasing="ease-out"
                         />
                       </LineChart>
                     </ResponsiveContainer>

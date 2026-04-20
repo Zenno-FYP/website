@@ -31,6 +31,22 @@ function hashString(s: string): number {
   return Math.abs(hash);
 }
 
+/**
+ * Inferred app categories — same keys/colours as `AppLanguagesDetailPage` and mobile `_kCategoryColors`.
+ */
+export const APP_USAGE_CATEGORY_COLORS: Record<string, string> = {
+  Development: "#5B6FD8",
+  Browser: "#4285F4",
+  Design: "#F24E1E",
+  Communication: "#7C3AED",
+  Productivity: "#9B59B6",
+  Other: "#6B7280",
+};
+
+export function appUsageCategoryColor(category: string): string {
+  return APP_USAGE_CATEGORY_COLORS[category] ?? APP_STYLE_PALETTE[hashString(category) % APP_STYLE_PALETTE.length].color;
+}
+
 export function getAppRowVisual(appName: string): { color: string; linearGradient: string } {
   return APP_STYLE_PALETTE[hashString(appName) % APP_STYLE_PALETTE.length];
 }

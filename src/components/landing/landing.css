@@ -8,21 +8,21 @@
 .landing-section {
   padding-left: 1.5rem;
   padding-right: 1.5rem;
-  padding-top: 3rem;
-  padding-bottom: 3rem;
+  padding-top: 2.75rem;
+  padding-bottom: 2.75rem;
 }
 
 @media (min-width: 768px) {
   .landing-section {
-    padding-top: 3.75rem;
-    padding-bottom: 3.75rem;
+    padding-top: 3.25rem;
+    padding-bottom: 3.25rem;
   }
 }
 
 @media (min-width: 1024px) {
   .landing-section {
-    padding-top: 4.5rem;
-    padding-bottom: 4.5rem;
+    padding-top: 3.75rem;
+    padding-bottom: 3.75rem;
   }
 }
 
@@ -72,14 +72,14 @@
   }
 }
 
-/* Vertical stack between major blocks inside FeatureDeepDive (replaces space-y-32) */
+/* Vertical stack between major blocks inside FeatureDeepDive */
 .landing-deep-dive-stack > * + * {
-  margin-top: 3rem;
+  margin-top: 2.5rem;
 }
 
 @media (min-width: 1024px) {
   .landing-deep-dive-stack > * + * {
-    margin-top: 3.75rem;
+    margin-top: 3rem;
   }
 }
 
@@ -104,7 +104,7 @@
 .landing-grid-2 {
   display: grid;
   gap: 1.5rem;
-  align-items: center;
+  align-items: start;
 }
 
 @media (min-width: 1024px) {
@@ -170,7 +170,7 @@
 
 /* Margins missing from bundle (mb-* stops around mb-8) */
 .landing-mb-heading {
-  margin-bottom: 2rem;
+  margin-bottom: 1.75rem;
 }
 
 .landing-mb-block {
@@ -179,6 +179,15 @@
 
 .landing-mb-section {
   margin-bottom: 2rem;
+}
+
+/* Glass cards: smooth lift on hover (transform only — box-shadow stays inline on the component) */
+.landing-glass-surface {
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.landing-glass-hover:hover {
+  transform: translateY(-3px);
 }
 
 .landing-footer-grid {

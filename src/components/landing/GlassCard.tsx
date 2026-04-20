@@ -9,8 +9,8 @@ interface GlassCardProps {
 export function GlassCard({ children, className = '', hover = false }: GlassCardProps) {
   return (
     <div
-      className={`rounded-3xl backdrop-blur-md transition-all duration-300 ${
-        hover ? 'hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/10' : ''
+      className={`landing-glass-surface rounded-3xl backdrop-blur-md ${
+        hover ? 'landing-glass-hover' : ''
       } ${className}`}
       style={{
         background: 'rgba(18, 18, 24, 0.55)',

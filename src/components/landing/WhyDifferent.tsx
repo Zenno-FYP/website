@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { X, Check } from "lucide-react";
+import { fadeUp, landingViewport, staggerDelay } from "./landingMotion";
 
 const comparisons = [
   {
@@ -25,10 +26,10 @@ export function WhyDifferent() {
     <section className="landing-section">
       <div className="max-w-7xl mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 22 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7 }}
+          viewport={landingViewport}
+          transition={fadeUp(0.82, 0)}
           className="text-center landing-mb-heading"
         >
           <h2
@@ -57,7 +58,7 @@ export function WhyDifferent() {
         </motion.div>
 
         <div className="max-w-4xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-8 mb-8">
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
             <div className="text-center pb-4 border-b" style={{ borderColor: "rgba(255, 255, 255, 0.08)" }}>
               <h3
                 style={{
@@ -87,11 +88,11 @@ export function WhyDifferent() {
           {comparisons.map((item, index) => (
             <motion.div
               key={item.typical}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 14 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="grid md:grid-cols-2 gap-8 py-6 border-b"
+              viewport={landingViewport}
+              transition={fadeUp(0.75, staggerDelay(index, 0.08))}
+              className="grid md:grid-cols-2 gap-6 py-5 border-b"
               style={{ borderColor: "rgba(255, 255, 255, 0.05)" }}
             >
               <div className="flex items-start gap-3">

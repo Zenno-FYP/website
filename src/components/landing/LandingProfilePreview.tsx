@@ -2,6 +2,7 @@ import { motion } from "motion/react";
 import { Calendar, Clock, Flame, Github, Linkedin, Mail, Zap } from "lucide-react";
 import { GlassCard } from "./GlassCard";
 import { LANGUAGE_MOCK, LANDING_LANGUAGE_COLORS } from "./analyticsTheme";
+import { fadeUp, landingViewport } from "./landingMotion";
 
 function langColor(name: string): string {
   return LANDING_LANGUAGE_COLORS[name] ?? "#5B6FD8";
@@ -33,10 +34,10 @@ export function LandingProfilePreview() {
     <section id="profile" className="landing-section" style={{ background: "#0A0A0F" }}>
       <div className="max-w-7xl mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 22 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7 }}
+          viewport={landingViewport}
+          transition={fadeUp(0.82, 0)}
           className="text-center landing-mb-heading"
         >
           <h2
@@ -62,10 +63,10 @@ export function LandingProfilePreview() {
         <div className="landing-grid-2 landing-grid-2-stretch">
           <motion.div
             className="flex min-w-0"
-            initial={{ opacity: 0, x: -24 }}
+            initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7 }}
+            viewport={landingViewport}
+            transition={fadeUp(0.85, 0.05)}
           >
             <GlassCard className="flex h-full w-full flex-col p-8 rounded-3xl border border-white/10 shadow-lg" hover={false}>
               <div className="flex flex-1 flex-col gap-8 md:flex-row">
@@ -153,10 +154,10 @@ export function LandingProfilePreview() {
 
           <motion.div
             className="flex min-w-0"
-            initial={{ opacity: 0, x: 24 }}
+            initial={{ opacity: 0, x: 20 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7 }}
+            viewport={landingViewport}
+            transition={fadeUp(0.85, 0.12)}
           >
             <GlassCard className="flex h-full w-full flex-col rounded-2xl border border-white/10 p-6 shadow-md backdrop-blur-xl" hover={false}>
               <div className="mb-4 flex flex-wrap items-start justify-between gap-3">

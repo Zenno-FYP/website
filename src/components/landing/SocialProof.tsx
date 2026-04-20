@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import { Clock, Code2, BarChart3, Zap } from 'lucide-react';
+import { fadeUp, landingViewport, staggerDelay } from './landingMotion';
 
 const proofChips = [
   { icon: Clock, text: 'Tracks focus time' },
@@ -13,19 +14,19 @@ export function SocialProof() {
     <section className="landing-social">
       <div className="max-w-7xl mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="flex flex-wrap justify-center items-center gap-8"
+          viewport={landingViewport}
+          transition={fadeUp(0.75, 0)}
+          className="flex flex-wrap justify-center items-center gap-5 md:gap-6"
         >
           {proofChips.map((chip, index) => (
             <motion.div
               key={chip.text}
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.94 }}
               whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
+              viewport={landingViewport}
+              transition={fadeUp(0.65, staggerDelay(index, 0.08))}
               className="flex items-center gap-2 px-6 py-3 rounded-full"
               style={{
                 background: 'rgba(91, 111, 216, 0.1)',

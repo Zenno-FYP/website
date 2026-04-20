@@ -25,6 +25,12 @@ const TOOLTIP_STYLE: CSSProperties = {
   color: "#F3F4F6",
 };
 
+const AREA_ANIM = {
+  isAnimationActive: true as const,
+  animationDuration: 1200,
+  animationEasing: "ease-out" as const,
+};
+
 type Props = {
   data: LandingTrendPoint[];
   height?: number;
@@ -88,6 +94,7 @@ export function LandingDeveloperTrendsChart({
               fillOpacity={0.08}
               dot={false}
               activeDot={{ r: 5, fill: CATEGORY_COLORS.flow }}
+              {...AREA_ANIM}
             />
           ) : null}
           {show("debugging_hours") ? (
@@ -101,6 +108,7 @@ export function LandingDeveloperTrendsChart({
               fillOpacity={0.08}
               dot={false}
               activeDot={{ r: 5, fill: CATEGORY_COLORS.debugging }}
+              {...AREA_ANIM}
             />
           ) : null}
           {show("research_hours") ? (
@@ -114,6 +122,7 @@ export function LandingDeveloperTrendsChart({
               fillOpacity={0.08}
               dot={false}
               activeDot={{ r: 5, fill: CATEGORY_COLORS.research }}
+              {...AREA_ANIM}
             />
           ) : null}
           {show("communication_hours") ? (
@@ -127,6 +136,7 @@ export function LandingDeveloperTrendsChart({
               fillOpacity={0.08}
               dot={false}
               activeDot={{ r: 5, fill: CATEGORY_COLORS.communication }}
+              {...AREA_ANIM}
             />
           ) : null}
           {show("distracted_hours") ? (
@@ -140,6 +150,7 @@ export function LandingDeveloperTrendsChart({
               fillOpacity={0.08}
               dot={false}
               activeDot={{ r: 5, fill: CATEGORY_COLORS.distracted }}
+              {...AREA_ANIM}
             />
           ) : null}
         </ComposedChart>

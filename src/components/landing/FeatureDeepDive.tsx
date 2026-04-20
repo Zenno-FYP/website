@@ -1,10 +1,12 @@
-import { motion } from "motion/react";
+import { useRef } from "react";
+import { motion, useInView } from "motion/react";
 import { GlassCard } from "./GlassCard";
-import { Bell, Bot } from "lucide-react";
+import { Bell, Bot, MessageCircle, UsersRound } from "lucide-react";
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import { CATEGORY_COLORS, getAppIconForName, getAppRowVisual } from "./analyticsTheme";
+import { appUsageCategoryColor, getAppIconForName, getAppRowVisual } from "./analyticsTheme";
 import { LANDING_DEVELOPER_TRENDS_WEEK } from "./landingChartData";
 import { LandingDeveloperTrendsChart } from "./LandingDeveloperTrendsChart";
+import { fadeUp, landingViewport, LANDING_EASE, staggerDelay } from "./landingMotion";
 
 const topApps = [
   { name: "Visual Studio Code", hours: 32.0, percent: 32 },
@@ -14,16 +16,17 @@ const topApps = [
   { name: "ChatGPT", hours: 10.0, percent: 14 },
 ];
 
-/** Same illustrative week split as before — now as pie slices (hours) */
-const CATEGORY_PIE_HOURS = [
-  { name: "Flow", hours: 34.5, fill: CATEGORY_COLORS.flow },
-  { name: "Debugging", hours: 9.9, fill: CATEGORY_COLORS.debugging },
-  { name: "Research", hours: 7.8, fill: CATEGORY_COLORS.research },
-  { name: "Communication", hours: 4.2, fill: CATEGORY_COLORS.communication },
-  { name: "Distracted", hours: 2.1, fill: CATEGORY_COLORS.distracted },
+/** Apps & Languages · usage by category (same labels/colours as web + mobile) */
+const APP_CATEGORY_HOURS = [
+  { name: "Development", hours: 28.5 },
+  { name: "Browser", hours: 12.0 },
+  { name: "Communication", hours: 8.2 },
+  { name: "Design", hours: 5.0 },
+  { name: "Productivity", hours: 3.8 },
+  { name: "Other", hours: 1.0 },
 ] as const;
 
-const categoryWeekTotal = CATEGORY_PIE_HOURS.reduce((a, x) => a + x.hours, 0);
+const appCategoryWeekTotal = APP_CATEGORY_HOURS.reduce((a, x) => a + x.hours, 0);
 
 const agentPrefs = [
   {
@@ -60,16 +63,19 @@ const nudgeExamples = [
 ] as const;
 
 export function FeatureDeepDive() {
+  const pieWrapRef = useRef<HTMLDivElement>(null);
+  const pieChartInView = useInView(pieWrapRef, { once: true, amount: 0.35, margin: "-48px 0px" });
+
   return (
     <section className="landing-section">
       <div className="max-w-7xl mx-auto landing-deep-dive-stack">
         {/* Section A: Work Patterns */}
         <div className="landing-grid-2">
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
+            initial={{ opacity: 0, x: -22 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
+            viewport={landingViewport}
+            transition={fadeUp(0.88, 0)}
           >
             <h2
               style={{
@@ -77,18 +83,25 @@ export function FeatureDeepDive() {
                 fontWeight: 700,
                 color: "#F5F7FA",
                 fontFamily: "Space Grotesk, sans-serif",
-                marginBottom: "1.5rem",
+                marginBottom: "1.25rem",
               }}
             >
               See your work patterns
             </h2>
-            <p style={{ fontSize: "1.125rem", color: "#A7B0BE", lineHeight: "1.7", marginBottom: "1.5rem" }}>
-              Zenno labels active time the same way everywhere: flow, debugging, research, communication, and
-              distracted hours—so the landing visuals match Developer Trends on the web and your analytics on mobile.
+            <p style={{ fontSize: "1.125rem", color: "#A7B0BE", lineHeight: "1.7", marginBottom: "1.25rem" }}>
+              Developer Trends tracks focus the same way on web and mobile—flow, debugging, research, communication, and
+              distracted hours. Apps &amp; Languages adds{" "}
+              <span style={{ color: "#E5E7EB" }}>inferred app categories</span> (Development, Browser, Communication, …)
+              so you see where applications sit, not just raw screen time.
             </p>
 
             <GlassCard className="p-6">
-              <div style={{ color: "#6F7885", fontSize: "0.875rem", marginBottom: "0.5rem" }}>This week · hours by category</div>
+              <div style={{ color: "#6F7885", fontSize: "0.875rem", marginBottom: "0.35rem" }}>
+                This week · hours by app category
+              </div>
+              <div style={{ color: "#6F7885", fontSize: "0.75rem", marginBottom: "0.75rem", lineHeight: 1.45 }}>
+                Grouped like Apps &amp; Languages — same categories on web and mobile
+              </div>
               <div className="flex flex-wrap items-end justify-between gap-4 mb-2">
                 <span
                   style={{
@@ -98,55 +111,88 @@ export function FeatureDeepDive() {
                     fontFamily: "Space Grotesk, sans-serif",
                   }}
                 >
-                  {categoryWeekTotal.toFixed(1)}h
+                  {appCategoryWeekTotal.toFixed(1)}h
                 </span>
-                <span style={{ fontSize: "0.8125rem", color: "#6F7885" }}>Tracked active time</span>
+                <span style={{ fontSize: "0.8125rem", color: "#6F7885" }}>Tracked app time</span>
               </div>
-              <div style={{ width: "100%", height: 300 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={CATEGORY_PIE_HOURS.map((d) => ({ name: d.name, value: d.hours }))}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      innerRadius="58%"
-                      outerRadius="88%"
-                      paddingAngle={2}
-                      stroke="rgba(15, 15, 20, 0.9)"
-                      strokeWidth={2}
-                    >
-                      {CATEGORY_PIE_HOURS.map((entry) => (
-                        <Cell key={entry.name} fill={entry.fill} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value: number) => [`${value.toFixed(1)}h`, "Time"]}
-                      contentStyle={{
-                        backgroundColor: "rgba(17, 24, 39, 0.95)",
-                        border: "none",
-                        borderRadius: "12px",
-                        boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
-                        color: "#F3F4F6",
-                      }}
-                    />
-                    <Legend
-                      wrapperStyle={{ fontSize: "12px", color: "#9CA3AF", paddingTop: "8px" }}
-                      formatter={(value) => <span style={{ color: "#A7B0BE" }}>{value}</span>}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+              <motion.div
+                ref={pieWrapRef}
+                className="w-full"
+                style={{ height: 300 }}
+                initial={{ opacity: 0, scale: 0.96 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={landingViewport}
+                transition={{ duration: 0.7, ease: LANDING_EASE }}
+              >
+                {pieChartInView ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={APP_CATEGORY_HOURS.map((d) => ({ name: d.name, value: d.hours }))}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius="58%"
+                        outerRadius="88%"
+                        paddingAngle={2}
+                        stroke="rgba(15, 15, 20, 0.9)"
+                        strokeWidth={2}
+                        isAnimationActive
+                        animationBegin={120}
+                        animationDuration={1500}
+                        animationEasing="ease-out"
+                      >
+                        {APP_CATEGORY_HOURS.map((entry) => (
+                          <Cell key={entry.name} fill={appUsageCategoryColor(entry.name)} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: number) => [`${value.toFixed(1)}h`, "Time"]}
+                        contentStyle={{
+                          backgroundColor: "rgba(17, 24, 39, 0.98)",
+                          border: "1px solid rgba(255, 255, 255, 0.12)",
+                          borderRadius: "12px",
+                          boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
+                          color: "#F9FAFB",
+                        }}
+                        labelStyle={{
+                          color: "#F9FAFB",
+                          fontWeight: 600,
+                          marginBottom: "0.25rem",
+                        }}
+                        itemStyle={{ color: "#E5E7EB" }}
+                      />
+                      <Legend
+                        wrapperStyle={{ fontSize: "12px", color: "#9CA3AF", paddingTop: "8px" }}
+                        formatter={(value) => <span style={{ color: "#A7B0BE" }}>{value}</span>}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div
+                    className="h-full w-full rounded-2xl"
+                    style={{ background: "rgba(255, 255, 255, 0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+                    aria-hidden
+                  />
+                )}
+              </motion.div>
             </GlassCard>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
+            initial={{ opacity: 0, x: 22 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
+            viewport={landingViewport}
+            transition={fadeUp(0.88, 0.08)}
+            className="flex w-full min-w-0 flex-col gap-4"
           >
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={landingViewport}
+              transition={{ duration: 0.65, ease: LANDING_EASE }}
+            >
             <GlassCard className="p-8">
               <LandingDeveloperTrendsChart
                 data={LANDING_DEVELOPER_TRENDS_WEEK}
@@ -154,16 +200,77 @@ export function FeatureDeepDive() {
                 title="Developer Trends · weekly hours"
               />
             </GlassCard>
+            </motion.div>
+            <GlassCard className="p-6">
+              <div className="flex gap-4">
+                <div
+                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-lg"
+                  style={{
+                    background: "linear-gradient(to bottom right, #5B6FD8, #7C4DFF)",
+                  }}
+                  aria-hidden
+                >
+                  <UsersRound className="h-7 w-7 text-white" strokeWidth={1.75} />
+                </div>
+                <div className="min-w-0">
+                  <h3
+                    style={{
+                      fontSize: "1.25rem",
+                      fontWeight: 700,
+                      color: "#F5F7FA",
+                      fontFamily: "Space Grotesk, sans-serif",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    Find peers
+                  </h3>
+                  <p style={{ fontSize: "0.9375rem", color: "#A7B0BE", lineHeight: 1.6, margin: 0 }}>
+                    Search teammates by skills, projects, apps, and bio—same discovery experience as the dashboard
+                    Peers screen on web and mobile.
+                  </p>
+                </div>
+              </div>
+            </GlassCard>
+            <GlassCard className="p-6">
+              <div className="flex gap-4">
+                <div
+                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-lg"
+                  style={{
+                    background: "linear-gradient(to bottom right, #7C3AED, #5B6FD8)",
+                  }}
+                  aria-hidden
+                >
+                  <MessageCircle className="h-7 w-7 text-white" strokeWidth={1.75} />
+                </div>
+                <div className="min-w-0">
+                  <h3
+                    style={{
+                      fontSize: "1.25rem",
+                      fontWeight: 700,
+                      color: "#F5F7FA",
+                      fontFamily: "Space Grotesk, sans-serif",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    Chats
+                  </h3>
+                  <p style={{ fontSize: "0.9375rem", color: "#A7B0BE", lineHeight: 1.6, margin: 0 }}>
+                    Direct messages with peers—conversation list and thread view aligned with the in-app Chats experience,
+                    including real-time updates when you are signed in.
+                  </p>
+                </div>
+              </div>
+            </GlassCard>
           </motion.div>
         </div>
 
         {/* Section B: Tools & Languages */}
         <div className="landing-grid-2">
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
+            initial={{ opacity: 0, x: -22 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
+            viewport={landingViewport}
+            transition={fadeUp(0.88, 0)}
             className="landing-fd-swap-a"
           >
             <GlassCard className="p-8">
@@ -207,8 +314,8 @@ export function FeatureDeepDive() {
                             <motion.div
                               initial={{ width: 0 }}
                               whileInView={{ width: `${app.percent}%` }}
-                              viewport={{ once: true }}
-                              transition={{ duration: 1, delay: 0.2 }}
+                              viewport={landingViewport}
+                              transition={{ duration: 1.05, delay: 0.12, ease: LANDING_EASE }}
                               className="absolute top-0 left-0 h-full rounded-full"
                               style={{
                                 background: `linear-gradient(to right, ${color}, ${color}dd)`,
@@ -225,10 +332,10 @@ export function FeatureDeepDive() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
+            initial={{ opacity: 0, x: 22 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
+            viewport={landingViewport}
+            transition={fadeUp(0.88, 0.06)}
             className="landing-fd-swap-b"
           >
             <h2
@@ -237,7 +344,7 @@ export function FeatureDeepDive() {
                 fontWeight: 700,
                 color: "#F5F7FA",
                 fontFamily: "Space Grotesk, sans-serif",
-                marginBottom: "1.5rem",
+                marginBottom: "1.25rem",
               }}
             >
               Tools, languages, and projects in one place
@@ -252,38 +359,27 @@ export function FeatureDeepDive() {
         {/* Section C: Zenno Agent */}
         <div className="landing-grid-2">
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
+            initial={{ opacity: 0, x: -22 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
+            viewport={landingViewport}
+            transition={fadeUp(0.88, 0)}
           >
-            <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-start">
-              <div
-                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl shadow-xl"
+            <div className="mb-6">
+              <h2
                 style={{
-                  background: "linear-gradient(to bottom right, #7C4DFF, #5B6FD8)",
+                  fontSize: "2.5rem",
+                  fontWeight: 700,
+                  color: "#F5F7FA",
+                  fontFamily: "Space Grotesk, sans-serif",
+                  marginBottom: "1rem",
                 }}
-                aria-hidden
               >
-                <Bot className="w-8 h-8 text-white drop-shadow-lg" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h2
-                  style={{
-                    fontSize: "2.5rem",
-                    fontWeight: 700,
-                    color: "#F5F7FA",
-                    fontFamily: "Space Grotesk, sans-serif",
-                    marginBottom: "1rem",
-                  }}
-                >
-                  Nudges that follow your Zenno Agent settings
-                </h2>
-                <p style={{ fontSize: "1.125rem", color: "#A7B0BE", lineHeight: "1.7", margin: 0 }}>
-                  Schedules, focus styles, and wellbeing goals come straight from the agent screen—so reminders line up
-                  with how you actually work, not a generic template.
-                </p>
-              </div>
+                Nudges that follow your Zenno Agent settings
+              </h2>
+              <p style={{ fontSize: "1.125rem", color: "#A7B0BE", lineHeight: "1.7", margin: 0 }}>
+                Schedules, focus styles, and wellbeing goals come straight from the agent screen—so reminders line up
+                with how you actually work, not a generic template.
+              </p>
             </div>
 
             <div className="space-y-3">
@@ -309,13 +405,13 @@ export function FeatureDeepDive() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
+            initial={{ opacity: 0, x: 22 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="relative"
+            viewport={landingViewport}
+            transition={fadeUp(0.88, 0.08)}
+            className="flex min-w-0 flex-col gap-8"
           >
-            <div className="mb-6 flex items-start gap-4">
+            <div className="flex shrink-0 items-start gap-4">
               <div
                 className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl shadow-xl"
                 style={{
@@ -342,14 +438,14 @@ export function FeatureDeepDive() {
                 </p>
               </div>
             </div>
-            <div className="space-y-4">
+            <div className="min-w-0 space-y-4">
               {nudgeExamples.map((nudge, index) => (
                 <motion.div
                   key={nudge.time}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 14 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: index * 0.15 }}
+                  viewport={landingViewport}
+                  transition={fadeUp(0.72, staggerDelay(index, 0.1))}
                 >
                   <GlassCard className="p-4">
                     <div className="flex gap-3">

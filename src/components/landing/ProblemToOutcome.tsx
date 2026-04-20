@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import { GlassCard } from './GlassCard';
+import { fadeUp, landingViewport, staggerDelay } from './landingMotion';
 import { Eye, Shuffle, TrendingDown } from 'lucide-react';
 
 const problems = [
@@ -28,10 +29,10 @@ export function ProblemToOutcome() {
     <section className="landing-section">
       <div className="max-w-7xl mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 22 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7 }}
+          viewport={landingViewport}
+          transition={fadeUp(0.82, 0)}
           className="text-center landing-mb-heading"
         >
           <h2
@@ -54,10 +55,10 @@ export function ProblemToOutcome() {
           {problems.map((item, index) => (
             <motion.div
               key={item.title}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: index * 0.15 }}
+              viewport={landingViewport}
+              transition={fadeUp(0.78, staggerDelay(index, 0.1))}
             >
               <GlassCard className="p-8 h-full" hover>
                 <div

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowRight } from 'lucide-react';
+import { fadeUp, landingViewport } from './landingMotion';
 
 export function FinalCTA() {
   const navigate = useNavigate();
@@ -8,10 +9,10 @@ export function FinalCTA() {
     <section className="landing-section">
       <div className="max-w-7xl mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
+          viewport={landingViewport}
+          transition={fadeUp(0.95, 0)}
           className="relative rounded-3xl overflow-hidden text-center"
           style={{
             background: 'linear-gradient(135deg, rgba(91, 111, 216, 0.2) 0%, rgba(124, 77, 255, 0.15) 100%)',
@@ -32,9 +33,9 @@ export function FinalCTA() {
               opacity: [0.5, 0.8, 0.5]
             }}
             transition={{
-              duration: 8,
+              duration: 10,
               repeat: Infinity,
-              ease: "easeInOut"
+              ease: 'easeInOut',
             }}
           />
 

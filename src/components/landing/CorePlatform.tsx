@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { GlassCard } from "./GlassCard";
+import { fadeUp, landingViewport, staggerDelay } from "./landingMotion";
 import { BarChart3, Code2, Folder, Sparkles } from "lucide-react";
 import { LandingTopLanguagesPreview } from "./LandingTopLanguagesPreview";
 
@@ -14,7 +15,7 @@ const features = [
     icon: Code2,
     title: "Apps & languages",
     description:
-      "See which editors and browsers get your hours, plus how coding time splits across languages.",
+      "Top apps, language mix, and inferred categories (Development, Browser, Communication, …)—matching the Apps & Languages views on web and mobile.",
   },
   {
     icon: Folder,
@@ -35,10 +36,10 @@ export function CorePlatform() {
     <section id="features" className="landing-section" style={{ background: "#0F0F14" }}>
       <div className="max-w-7xl mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 22 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7 }}
+          viewport={landingViewport}
+          transition={fadeUp(0.82, 0)}
           className="text-center landing-mb-heading"
         >
           <h2
@@ -57,12 +58,12 @@ export function CorePlatform() {
           </p>
         </motion.div>
 
-        <div className="landing-grid-2 landing-mb-section">
+        <div className="landing-grid-2">
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
+            initial={{ opacity: 0, x: -24 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
+            viewport={landingViewport}
+            transition={fadeUp(0.88, 0.06)}
           >
             <GlassCard className="p-8">
               <LandingTopLanguagesPreview />
@@ -73,10 +74,10 @@ export function CorePlatform() {
             {features.map((feature, index) => (
               <motion.div
                 key={feature.title}
-                initial={{ opacity: 0, x: 30 }}
+                initial={{ opacity: 0, x: 22 }}
                 whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={landingViewport}
+                transition={fadeUp(0.78, staggerDelay(index, 0.09))}
               >
                 <GlassCard className="p-6" hover>
                   <div className="flex gap-4">
