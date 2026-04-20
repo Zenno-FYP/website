@@ -194,3 +194,46 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+/* How It Works: always horizontal — scroll on small viewports, centered on lg+ */
+.how-it-works-row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: flex-start;
+  width: 100%;
+  gap: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.5rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
+.how-it-works-row::-webkit-scrollbar {
+  height: 6px;
+}
+
+.how-it-works-row::-webkit-scrollbar-thumb {
+  background: rgba(124, 77, 255, 0.35);
+  border-radius: 3px;
+}
+
+.how-it-works-step {
+  flex: 0 0 min(85vw, 17rem);
+  max-width: 17rem;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .how-it-works-row {
+    justify-content: center;
+    overflow-x: visible;
+    padding-bottom: 0;
+  }
+
+  .how-it-works-step {
+    flex: 1 1 0;
+    max-width: 17rem;
+  }
+}
