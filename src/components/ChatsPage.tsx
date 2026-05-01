@@ -4,19 +4,23 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { ScrollArea } from "./ui/scroll-area";
-import { ArrowLeft, Search, Send, MessageCircle, Loader2 } from "lucide-react";
+import { cn } from "./ui/utils";
+import { ArrowLeft, Search, Send, MessageCircle, Loader2, Flag, X } from "lucide-react";
 import {
   fetchChatConversations,
   fetchChatMessages,
   getBackendOriginForSocket,
   markChatRead,
   openChatWithUser,
+  reportChatConversation,
   type ChatConversationSummary,
   type ChatMessageItem,
 } from "@/services/api";
 import { useFirebaseUser, useUser } from "@/stores/useAuthHooks";
 import { AxiosError } from "axios";
 import { handleApiError } from "@/services/errorHandler";
+import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
 
 interface ChatsPageProps {
   theme: "light" | "dark";
@@ -64,6 +68,9 @@ export function ChatsPage({
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportSubmitting, setReportSubmitting] = useState(false);
   const [socketConnected, setSocketConnected] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const openingPeerRef = useRef(false);
@@ -72,6 +79,15 @@ export function ChatsPage({
 
   selectedConvRef.current = selectedConvId;
   myIdRef.current = myId;
+
+  useEffect(() => {
+    if (!reportOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setReportOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [reportOpen]);
 
   const loadConversations = useCallback(async () => {
     setLoadingList(true);
@@ -231,6 +247,32 @@ export function ChatsPage({
 
   const selectedConv = conversations.find((c) => c.id === selectedConvId) ?? null;
 
+  const submitReport = async () => {
+    if (!selectedConvId) return;
+    setReportSubmitting(true);
+    try {
+      await reportChatConversation(selectedConvId, reportReason);
+      toast.success("Report submitted. Thank you.");
+      setReportOpen(false);
+      setReportReason("");
+    } catch (e: unknown) {
+      const ax = e as AxiosError<{ message?: string }>;
+      if (ax.response?.status === 409) {
+        toast.error(
+          typeof ax.response.data?.message === "string"
+            ? ax.response.data.message
+            : "You already have an open report for this conversation.",
+        );
+      } else if (e instanceof AxiosError) {
+        toast.error(handleApiError(e));
+      } else {
+        toast.error("Could not submit report.");
+      }
+    } finally {
+      setReportSubmitting(false);
+    }
+  };
+
   const handleSendMessage = () => {
     const text = messageText.trim();
     if (!text || !selectedConv || !socketConnected) return;
@@ -251,7 +293,8 @@ export function ChatsPage({
   const panelMuted = theme === "dark" ? "text-gray-400" : "text-gray-600";
 
   return (
-    <div className="fixed inset-0 z-50">
+    <>
+      <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 pointer-events-none z-0">
         {theme === "dark" && (
           <div
@@ -305,9 +348,13 @@ export function ChatsPage({
                   }`}
                 />
                 <Input
+                  id="chats-inbox-search"
+                  name="inboxSearch"
+                  type="search"
                   placeholder="Search people…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  autoComplete="off"
                   className={`rounded-xl pl-10 ${
                     theme === "dark"
                       ? "border-white/10 bg-white/5 text-white placeholder:text-gray-400"
@@ -406,12 +453,12 @@ export function ChatsPage({
           {selectedConv ? (
             <div className="flex flex-1 flex-col overflow-hidden">
               <div
-                className={`flex flex-shrink-0 items-center justify-between border-b p-4 ${
+                className={`relative z-20 flex flex-shrink-0 items-center justify-between gap-3 border-b p-4 ${
                   theme === "dark" ? "border-white/10" : "border-gray-200"
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <Avatar className="h-10 w-10 shrink-0">
                     <AvatarImage src={selectedConv.other_user.profilePhoto ?? undefined} alt={selectedConv.other_user.name} />
                     <AvatarFallback className="bg-gradient-to-br from-[#5B6FD8] to-[#7C4DFF] text-white">
                       {selectedConv.other_user.name
@@ -422,11 +469,31 @@ export function ChatsPage({
                         .toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
-                    <h3 className={theme === "dark" ? "text-white" : "text-gray-900"}>{selectedConv.other_user.name}</h3>
+                  <div className="min-w-0">
+                    <h3 className={`truncate ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                      {selectedConv.other_user.name}
+                    </h3>
                     <p className={`text-xs ${panelMuted}`}>Direct message</p>
                   </div>
                 </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className={
+                    theme === "dark"
+                      ? "shrink-0 touch-manipulation border-white/20 bg-white/5 text-gray-200 hover:bg-white/10 [&_svg]:pointer-events-auto"
+                      : "shrink-0 touch-manipulation [&_svg]:pointer-events-auto"
+                  }
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setReportOpen(true);
+                  }}
+                >
+                  <Flag className="mr-2 h-4 w-4" />
+                  Report
+                </Button>
               </div>
 
               <div className="flex-1 overflow-hidden">
@@ -471,9 +538,12 @@ export function ChatsPage({
                 {sendError ? <p className="mb-2 text-sm text-red-500">{sendError}</p> : null}
                 <div className="flex items-center gap-3">
                   <Input
+                    id="chat-message-input"
+                    name="message"
                     placeholder="Type a message…"
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
+                    autoComplete="off"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
@@ -523,6 +593,88 @@ export function ChatsPage({
           )}
         </div>
       </div>
+
+      {reportOpen ? (
+        <div
+          className="absolute inset-0 z-[100] flex items-center justify-center p-4 pointer-events-auto"
+          role="presentation"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/50"
+            aria-label="Close report dialog"
+            onClick={() => setReportOpen(false)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="chat-report-dialog-title"
+            className={cn(
+              "relative z-10 grid w-full max-w-md gap-4 rounded-lg border p-6 shadow-lg",
+              theme === "dark"
+                ? "border-white/10 bg-[#121218] text-gray-100"
+                : "border-gray-200 bg-white text-gray-900",
+            )}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex flex-col gap-2 text-center sm:text-left">
+              <h2
+                id="chat-report-dialog-title"
+                className={cn("text-lg font-semibold leading-none", theme === "dark" ? "text-white" : "text-gray-900")}
+              >
+                Report conversation
+              </h2>
+              <p className={cn("text-sm", theme === "dark" ? "text-gray-400" : "text-gray-600")}>
+                Our team will review this thread. You can add an optional reason below.
+              </p>
+            </div>
+            <Textarea
+              id="chat-report-reason"
+              name="reportReason"
+              placeholder="Reason (optional)"
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+              maxLength={500}
+              autoComplete="off"
+              className={
+                theme === "dark"
+                  ? "min-h-[100px] border-white/10 bg-white/5 text-white placeholder:text-gray-500"
+                  : "min-h-[100px]"
+              }
+            />
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setReportOpen(false)}
+                className={theme === "dark" ? "border-white/20 bg-transparent text-gray-200" : undefined}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                disabled={reportSubmitting}
+                onClick={() => void submitReport()}
+                className="rounded-xl bg-gradient-to-r from-[#7C4DFF] to-[#5B6FD8] text-white"
+              >
+                {reportSubmitting ? "Submitting…" : "Submit report"}
+              </Button>
+            </div>
+            <button
+              type="button"
+              className={cn(
+                "absolute right-4 top-4 rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-purple-500/50",
+                theme === "dark" && "ring-offset-[#121218]",
+              )}
+              onClick={() => setReportOpen(false)}
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
+    </>
   );
 }

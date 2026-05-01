@@ -17,8 +17,22 @@ export const handleApiError = (error: AxiosError): string => {
     return 'Invalid request. Please check your information.';
   }
 
+  if (error.response?.status === 403) {
+    const data = error.response.data as { message?: string };
+    return typeof data?.message === 'string' ? data.message : 'You do not have access to this resource.';
+  }
+
   if (error.response?.status === 404) {
     return 'User profile not found.';
+  }
+
+  if (error.response?.status === 409) {
+    const data = error.response.data as { message?: string };
+    return typeof data?.message === 'string' ? data.message : 'This action conflicts with the current state.';
+  }
+
+  if (error.response?.status === 429) {
+    return 'Too many requests. Please wait and try again.';
   }
 
   if (error.response?.status === 500) {

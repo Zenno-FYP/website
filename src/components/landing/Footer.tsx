@@ -23,7 +23,7 @@ export function Footer() {
     <footer className="landing-footer">
       <div className="max-w-7xl mx-auto">
         <div className="landing-footer-grid">
-          <div className="lg:col-span-2">
+          <div className="landing-footer-brand-span">
             <div className="mb-4">
               <Link to={brandTo}>
                 <img
@@ -128,10 +128,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div
-          className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4 border-t"
-          style={{ borderColor: "rgba(255, 255, 255, 0.05)" }}
-        >
+        <div className="landing-footer-bar">
           <p style={{ fontSize: "0.875rem", color: "#6F7885" }}>
             © 2026 Zenno. Built for developers who want clarity.
           </p>

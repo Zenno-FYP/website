@@ -12,10 +12,13 @@ import { Footer } from './Footer';
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen overflow-x-hidden" style={{
-      background: '#0A0A0F',
-      fontFamily: 'Inter, sans-serif'
-    }}>
+    <div
+      className="landing-page"
+      style={{
+        background: '#0A0A0F',
+        fontFamily: 'Inter, sans-serif',
+      }}
+    >
       <Navbar />
       <Hero />
       <SocialProof />

@@ -63,11 +63,8 @@ export function FinalCTA() {
             </h2>
 
             <p
-              className="max-w-2xl mx-auto"
+              className="landing-lead-lg max-w-2xl mx-auto"
               style={{
-                fontSize: '1.25rem',
-                color: '#A7B0BE',
-                lineHeight: 1.7,
                 marginBottom: '2.25rem',
               }}
             >

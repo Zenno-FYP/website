@@ -40,20 +40,12 @@ export function LandingProfilePreview() {
           transition={fadeUp(0.82, 0)}
           className="text-center landing-mb-heading"
         >
-          <h2
-            style={{
-              fontSize: "clamp(1.75rem, 4vw, 3rem)",
-              fontWeight: 700,
-              color: "#F5F7FA",
-              fontFamily: "Space Grotesk, sans-serif",
-              marginBottom: "1rem",
-            }}
-          >
+          <h2 className="landing-h2">
             A profile that connects you with peers
             <br />
             and hiring teams
           </h2>
-          <p style={{ fontSize: "1.125rem", color: "#A7B0BE", maxWidth: "42rem", margin: "0 auto", lineHeight: 1.6 }}>
+          <p className="landing-lead max-w-2xl mx-auto" style={{ margin: "0 auto", lineHeight: 1.6 }}>
             Your Zenno profile is built to showcase how you actually work—projects, languages, apps, and skills pulled from
             live activity—so teammates can find you and recruiters and HR get a credible, up-to-date picture of your
             craft, not a static résumé.
@@ -69,8 +61,8 @@ export function LandingProfilePreview() {
             transition={fadeUp(0.85, 0.05)}
           >
             <GlassCard className="flex h-full w-full flex-col p-8 rounded-3xl border border-white/10 shadow-lg" hover={false}>
-              <div className="flex flex-1 flex-col gap-8 md:flex-row">
-                <div className="flex shrink-0 flex-col items-center gap-4 md:items-start">
+              <div className="landing-profile-inner">
+                <div className="flex shrink-0 flex-col items-center gap-4">
                   <div
                     className="flex h-32 w-32 shrink-0 items-center justify-center rounded-full border-4 border-transparent text-3xl font-semibold text-white shadow-2xl ring-2 ring-[#5B6FD8]/40"
                     style={{
@@ -103,7 +95,7 @@ export function LandingProfilePreview() {
                 </div>
 
                 <div className="flex min-w-0 flex-1 flex-col space-y-4">
-                  <h3 className="text-3xl font-semibold tracking-tight text-white">Zubair Abbas</h3>
+                  <h3 className="landing-profile-name">Zubair Abbas</h3>
                   <div className="flex flex-wrap items-center gap-2 text-sm text-gray-400">
                     <Mail className="h-4 w-4 shrink-0" />
                     zubairabbas.dev@gmail.com
@@ -117,7 +109,7 @@ export function LandingProfilePreview() {
                     Joined March 2025
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 pt-2 md:grid-cols-4">
+                  <div className="landing-profile-metrics">
                     {[
                       { label: "Streak", value: "12d", icon: "flame" as const },
                       { label: "Projects", value: "8" },

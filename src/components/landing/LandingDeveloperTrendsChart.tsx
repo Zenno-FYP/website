@@ -34,6 +34,8 @@ const AREA_ANIM = {
 type Props = {
   data: LandingTrendPoint[];
   height?: number;
+  /** Parent sets height (e.g. clamp) — chart fills it via flex */
+  fillContainer?: boolean;
   /** `flow_only`: single series — matches hero “flow hours” card. `all`: same as web/mobile Developer Trends */
   mode?: SeriesMode;
   title?: string;
@@ -48,6 +50,7 @@ type Props = {
 export function LandingDeveloperTrendsChart({
   data,
   height = 300,
+  fillContainer = false,
   mode = "all",
   title,
   showLegend = true,
@@ -56,13 +59,13 @@ export function LandingDeveloperTrendsChart({
   const show = (key: keyof Omit<LandingTrendPoint, "time">) =>
     mode === "all" ? true : key === "flow_hours";
 
-  return (
-    <div className={className}>
-      {title ? (
-        <div style={{ color: "#6F7885", fontSize: "0.875rem", marginBottom: "1rem" }}>{title}</div>
-      ) : null}
-      <ResponsiveContainer width="100%" height={height}>
-        <ComposedChart data={data} margin={{ top: 12, right: 8, left: 0, bottom: 8 }}>
+  const titleEl = title ? (
+    <div style={{ color: "#6F7885", fontSize: "0.875rem", marginBottom: "1rem", flexShrink: 0 }}>{title}</div>
+  ) : null;
+
+  const chart = (
+    <ResponsiveContainer width="100%" height={fillContainer ? "100%" : height}>
+      <ComposedChart data={data} margin={{ top: 12, right: 8, left: 0, bottom: 8 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
           <XAxis
             dataKey="time"
@@ -154,7 +157,31 @@ export function LandingDeveloperTrendsChart({
             />
           ) : null}
         </ComposedChart>
-      </ResponsiveContainer>
+    </ResponsiveContainer>
+  );
+
+  if (fillContainer) {
+    return (
+      <div
+        className={className}
+        style={{
+          height: "100%",
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 0,
+        }}
+      >
+        {titleEl}
+        <div style={{ flex: 1, minHeight: 0, width: "100%", position: "relative" }}>{chart}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={className}>
+      {titleEl}
+      {chart}
     </div>
   );
 }

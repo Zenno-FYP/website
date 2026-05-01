@@ -77,25 +77,15 @@ export function FeatureDeepDive() {
             viewport={landingViewport}
             transition={fadeUp(0.88, 0)}
           >
-            <h2
-              style={{
-                fontSize: "2.5rem",
-                fontWeight: 700,
-                color: "#F5F7FA",
-                fontFamily: "Space Grotesk, sans-serif",
-                marginBottom: "1.25rem",
-              }}
-            >
-              See your work patterns
-            </h2>
-            <p style={{ fontSize: "1.125rem", color: "#A7B0BE", lineHeight: "1.7", marginBottom: "1.25rem" }}>
+            <h2 className="landing-h2-lg">See your work patterns</h2>
+            <p className="landing-lead" style={{ marginBottom: "1.25rem" }}>
               Developer Trends tracks focus the same way on web and mobile—flow, debugging, research, communication, and
               distracted hours. Apps &amp; Languages adds{" "}
               <span style={{ color: "#E5E7EB" }}>inferred app categories</span> (Development, Browser, Communication, …)
               so you see where applications sit, not just raw screen time.
             </p>
 
-            <GlassCard className="p-6">
+            <GlassCard className="landing-pad-card">
               <div style={{ color: "#6F7885", fontSize: "0.875rem", marginBottom: "0.35rem" }}>
                 This week · hours by app category
               </div>
@@ -117,8 +107,7 @@ export function FeatureDeepDive() {
               </div>
               <motion.div
                 ref={pieWrapRef}
-                className="w-full"
-                style={{ height: 300 }}
+                className="w-full landing-chart-pie-h"
                 initial={{ opacity: 0, scale: 0.96 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={landingViewport}
@@ -193,15 +182,17 @@ export function FeatureDeepDive() {
               viewport={landingViewport}
               transition={{ duration: 0.65, ease: LANDING_EASE }}
             >
-            <GlassCard className="p-8">
-              <LandingDeveloperTrendsChart
-                data={LANDING_DEVELOPER_TRENDS_WEEK}
-                height={300}
-                title="Developer Trends · weekly hours"
-              />
+            <GlassCard className="landing-pad-card">
+              <div className="landing-chart-trends-h">
+                <LandingDeveloperTrendsChart
+                  fillContainer
+                  data={LANDING_DEVELOPER_TRENDS_WEEK}
+                  title="Developer Trends · weekly hours"
+                />
+              </div>
             </GlassCard>
             </motion.div>
-            <GlassCard className="p-6">
+            <GlassCard className="landing-pad-card">
               <div className="flex gap-4">
                 <div
                   className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-lg"
@@ -231,7 +222,7 @@ export function FeatureDeepDive() {
                 </div>
               </div>
             </GlassCard>
-            <GlassCard className="p-6">
+            <GlassCard className="landing-pad-card">
               <div className="flex gap-4">
                 <div
                   className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-lg"
@@ -273,7 +264,7 @@ export function FeatureDeepDive() {
             transition={fadeUp(0.88, 0)}
             className="landing-fd-swap-a"
           >
-            <GlassCard className="p-8">
+            <GlassCard className="landing-pad-card">
               <div style={{ color: "#6F7885", fontSize: "0.875rem", marginBottom: "1rem" }}>
                 Top apps · this week
               </div>
@@ -338,18 +329,8 @@ export function FeatureDeepDive() {
             transition={fadeUp(0.88, 0.06)}
             className="landing-fd-swap-b"
           >
-            <h2
-              style={{
-                fontSize: "2.5rem",
-                fontWeight: 700,
-                color: "#F5F7FA",
-                fontFamily: "Space Grotesk, sans-serif",
-                marginBottom: "1.25rem",
-              }}
-            >
-              Tools, languages, and projects in one place
-            </h2>
-            <p style={{ fontSize: "1.125rem", color: "#A7B0BE", lineHeight: "1.7" }}>
+            <h2 className="landing-h2-lg">Tools, languages, and projects in one place</h2>
+            <p className="landing-lead">
               The same top-apps treatment as the dashboard and mobile: hashed colours per app, hours, and share of
               focus.
             </p>
@@ -365,18 +346,10 @@ export function FeatureDeepDive() {
             transition={fadeUp(0.88, 0)}
           >
             <div className="mb-6">
-              <h2
-                style={{
-                  fontSize: "2.5rem",
-                  fontWeight: 700,
-                  color: "#F5F7FA",
-                  fontFamily: "Space Grotesk, sans-serif",
-                  marginBottom: "1rem",
-                }}
-              >
+              <h2 className="landing-h2-lg" style={{ marginBottom: "1rem" }}>
                 Nudges that follow your Zenno Agent settings
               </h2>
-              <p style={{ fontSize: "1.125rem", color: "#A7B0BE", lineHeight: "1.7", margin: 0 }}>
+              <p className="landing-lead" style={{ margin: 0 }}>
                 Schedules, focus styles, and wellbeing goals come straight from the agent screen—so reminders line up
                 with how you actually work, not a generic template.
               </p>

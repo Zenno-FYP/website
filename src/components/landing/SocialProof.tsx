@@ -18,7 +18,7 @@ export function SocialProof() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={landingViewport}
           transition={fadeUp(0.75, 0)}
-          className="flex flex-wrap justify-center items-center gap-5 md:gap-6"
+          className="landing-social-chips"
         >
           {proofChips.map((chip, index) => (
             <motion.div
