@@ -33,6 +33,7 @@ import {
   WellbeingGoal,
   AgentTone,
 } from "@/services/api";
+import { userService } from "@/services/userService";
 
 // Hide the Download Agent button entirely until VITE_DESKTOP_AGENT_DOWNLOAD_URL
 // is configured (e.g. signed installer hosted on the marketing site / GitHub
@@ -70,6 +71,16 @@ const wellbeingGoals: { id: WellbeingGoal; label: string; emoji: string; descrip
 ];
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
+
+/** Desktop agent is considered "running" if activity was synced within this window. */
+const DESKTOP_SYNC_MAX_AGE_MS = 30 * 60 * 1000;
+
+function isDesktopAgentRecentlySynced(iso: string | null | undefined): boolean {
+  if (iso == null || String(iso).trim() === "") return false;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return false;
+  return Date.now() - t <= DESKTOP_SYNC_MAX_AGE_MS;
+}
 
 const SUPPRESSION_REASON_LABELS: Record<string, string> = {
   nudge_disabled: "Nudges disabled",
@@ -116,6 +127,12 @@ export function ZennoAgentPage({ theme, onBack }: ZennoAgentPageProps) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activitySyncAt, setActivitySyncAt] = useState<string | null>(null);
+
+  const syncFresh = isDesktopAgentRecentlySynced(activitySyncAt ?? undefined);
+  /** While loading, keep layout stable; after load, hide controls if desktop has not synced within 30 min. */
+  const showAgentControls = loading || syncFresh;
+  const showOfflineBanner = !loading && !syncFresh;
 
   // ── Fetch data ─────────────────────────────────────────────────────────────
 
@@ -123,12 +140,14 @@ export function ZennoAgentPage({ theme, onBack }: ZennoAgentPageProps) {
     setLoading(true);
     setError(null);
     try {
-      const [fetchedPrefs, fetchedStats] = await Promise.all([
+      const [fetchedPrefs, fetchedStats, profile] = await Promise.all([
         fetchAgentPreferences(),
         fetchAgentNudgeStats(),
+        userService.getProfile(),
       ]);
       setPrefs(fetchedPrefs);
       setStats(fetchedStats);
+      setActivitySyncAt(profile.activity_sync_at ?? null);
     } catch {
       setError("Failed to load agent data. Check your connection.");
     } finally {
@@ -328,12 +347,28 @@ export function ZennoAgentPage({ theme, onBack }: ZennoAgentPageProps) {
               {error}
             </div>
           )}
+
+          {showOfflineBanner && (
+            <div
+              className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
+                dark
+                  ? "border-amber-500/35 bg-amber-500/10 text-amber-100"
+                  : "border-amber-200 bg-amber-50 text-amber-900"
+              }`}
+              role="status"
+            >
+              <p className="font-medium">Desktop agent is not running</p>
+              <p className={`mt-1 ${dark ? "text-amber-200/90" : "text-amber-800/90"}`}>
+                Start the Zenno desktop agent on your computer so it can sync at least once every 30 minutes. Until then, only statistics are shown here.
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* ── Row 1: Statistics + Nudge Master Switch ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        {/* ── Row 1: Statistics (+ controls when desktop is syncing) ── */}
+        <div className={`grid grid-cols-1 gap-6 mb-6 ${showAgentControls ? "lg:grid-cols-3" : ""}`}>
           {/* Statistics */}
-          <Card className={`lg:col-span-2 p-6 rounded-3xl shadow-xl border backdrop-blur-2xl bg-gradient-to-br ${
+          <Card className={`${showAgentControls ? "lg:col-span-2" : ""} p-6 rounded-3xl shadow-xl border backdrop-blur-2xl bg-gradient-to-br ${
             dark
               ? "from-[#7C4DFF]/20 to-[#5B6FD8]/10 border-purple-500/20"
               : "from-purple-50 to-blue-50 border-purple-200"
@@ -421,7 +456,7 @@ export function ZennoAgentPage({ theme, onBack }: ZennoAgentPageProps) {
             )}
           </Card>
 
-          {/* Quick controls */}
+          {showAgentControls ? (
           <Card className={cardBase}>
             <div className="flex items-center gap-3 mb-6">
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${dark ? "bg-blue-500/20" : "bg-blue-100"}`}>
@@ -485,9 +520,11 @@ export function ZennoAgentPage({ theme, onBack }: ZennoAgentPageProps) {
               )}
             </div>
           </Card>
+          ) : null}
         </div>
 
-        {/* ── Row 2: Personalization ── */}
+        {/* ── Row 2: Personalization (desktop must be syncing) ── */}
+        {showAgentControls ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Work Schedule */}
           <Card className={cardBase}>
@@ -525,8 +562,10 @@ export function ZennoAgentPage({ theme, onBack }: ZennoAgentPageProps) {
             )}
           </Card>
         </div>
+        ) : null}
 
         {/* ── Row 3: Wellbeing + Agent Tone ── */}
+        {showAgentControls ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Wellbeing Goal */}
           <Card className={cardBase}>
@@ -564,11 +603,14 @@ export function ZennoAgentPage({ theme, onBack }: ZennoAgentPageProps) {
             )}
           </Card>
         </div>
+        ) : null}
 
         {/* Sync hint */}
+        {showAgentControls ? (
         <p className={`mt-6 text-center text-xs ${dark ? "text-gray-600" : "text-gray-400"}`}>
           Changes save instantly and are picked up by the desktop agent within 5 minutes.
         </p>
+        ) : null}
       </div>
     </div>
   );

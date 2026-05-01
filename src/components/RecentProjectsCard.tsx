@@ -42,7 +42,8 @@ export function RecentProjectsCard({ theme, onViewClick }: RecentProjectsCardPro
         setIsLoading(true);
         setError(null);
         const data = await fetchProjectInsights();
-        setProjects(data.current_projects);
+        // API returns most-recent-first; dashboard shows top four only.
+        setProjects(data.current_projects.slice(0, 4));
       } catch (err) {
         console.error('Failed to load projects:', err);
         setError('Failed to load projects');
@@ -93,7 +94,7 @@ export function RecentProjectsCard({ theme, onViewClick }: RecentProjectsCardPro
         <div className="space-y-3">
           {isLoading ? (
             <>
-              {[1, 2, 3].map((i) => (
+              {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-gray-300/20 dark:bg-gray-600/20 animate-pulse">
                   <div className="w-12 h-12 rounded-xl bg-gray-300/40 dark:bg-gray-600/40"></div>
                   <div className="flex-1 space-y-2">

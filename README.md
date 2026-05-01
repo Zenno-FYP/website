@@ -7,6 +7,7 @@ Zenno Website is the React + Vite frontend for the Zenno platform. It includes:
 - Firebase authentication integration
 - Web push notifications (Firebase Cloud Messaging)
 - Real-time chat via Socket.IO
+- **Admin console** for operators (`/admin`, Firebase + `isAdmin`)
 
 ## Product Overview
 
@@ -58,6 +59,17 @@ The frontend is designed for two audiences:
 - Web push registration and delivery (Firebase Cloud Messaging)
 - Zenno agent settings and nudge preference controls
 
+### Admin console (operators)
+
+Routes under **`/admin`** are a separate shell (sidebar + top bar) for workspace moderation and high-level stats. Access is **not** a separate password product: the same Firebase session as the main app is used, and the backend returns **403** unless the matching MongoDB user has **`isAdmin: true`**.
+
+- **`/admin`** — dashboard: aggregate stats, verification / activity charts, paginated user table
+- **`/admin/chat-reports`** — moderation queue with status filter and pagination
+- **`/admin/chat-reports/:reportId`** — report detail, message preview, status transitions and admin note
+- **`/admin/login`** — lightweight gate that redirects signed-in admins to `/admin` or sends others to sign-in
+
+API calls use the shared Axios client (`src/services/api.ts`) and typed helpers in **`src/services/adminApi.ts`** (`/admin/stats`, `/admin/users`, `/admin/chat-reports`, …). Ensure `VITE_API_BASE_URL` resolves to a host that includes `/api/v1` (see that file’s base-URL normalization).
+
 ## Typical User Flow
 
 1. User lands on marketing pages and signs in.
@@ -82,7 +94,8 @@ The frontend is designed for two audiences:
 - `src/components/landing` - public landing page sections and shared marketing UI
 - `src/pages` - top-level route page components
 - `src/components` - authenticated dashboard features and UI modules
-- `src/services` - API client and typed API helpers
+- `src/services` - API client and typed API helpers (`adminApi.ts` for `/admin/*` REST)
+- `src/pages/admin` - admin shell, dashboard, chat reports list/detail, login redirect
 - `src/stores` - global client state (auth/session)
 - `src/hooks` - reusable hooks (notifications, auth sync, etc.)
 - `src/lib` - Firebase bootstrap and shared utilities
@@ -188,7 +201,8 @@ This project includes `vercel.json` with:
 - **Auth issues:** confirm all Firebase env values match the correct project.
 - **Push notifications not working:** check `VITE_FIREBASE_VAPID_KEY`, browser notification permission, and service worker registration.
 - **API 404s on dashboard endpoints:** ensure `VITE_API_BASE_URL` points to backend origin or `/api/v1` base.
+- **Admin routes redirect to the main app:** backend rejected the session — confirm the user document has `isAdmin: true` and CORS allows your website origin.
 
 ---
 
-Last Updated: 2026-04-23
+Last Updated: 2026-05-01
