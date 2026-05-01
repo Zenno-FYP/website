@@ -62,6 +62,23 @@ const TermsOfServicePage = lazy(() =>
 const SecurityPage = lazy(() =>
   import("@/pages/SecurityPage").then((m) => ({ default: m.SecurityPage })),
 );
+const AdminLoginPage = lazy(() =>
+  import("@/pages/admin/AdminLoginPage").then((m) => ({ default: m.AdminLoginPage })),
+);
+const AdminProtectedLayout = lazy(() =>
+  import("@/pages/admin/AdminProtectedLayout").then((m) => ({ default: m.AdminProtectedLayout })),
+);
+const AdminDashboardPage = lazy(() =>
+  import("@/pages/admin/AdminDashboardPage").then((m) => ({ default: m.AdminDashboardPage })),
+);
+const AdminChatReportsPage = lazy(() =>
+  import("@/pages/admin/AdminChatReportsPage").then((m) => ({ default: m.AdminChatReportsPage })),
+);
+const AdminChatReportDetailPage = lazy(() =>
+  import("@/pages/admin/AdminChatReportDetailPage").then((m) => ({
+    default: m.AdminChatReportDetailPage,
+  })),
+);
 
 function PageFallback() {
   return (
@@ -251,6 +268,7 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem("theme", theme);
+    window.dispatchEvent(new CustomEvent<"light" | "dark">("zenno-theme", { detail: theme }));
   }, [theme]);
 
   useEffect(() => {
@@ -286,6 +304,47 @@ export default function App() {
           </Suspense>
         }
       />
+      <Route
+        path="/admin/login"
+        element={
+          <Suspense fallback={<PageFallback />}>
+            <AdminLoginPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <Suspense fallback={<PageFallback />}>
+            <AdminProtectedLayout />
+          </Suspense>
+        }
+      >
+        <Route
+          index
+          element={
+            <Suspense fallback={<PageFallback />}>
+              <AdminDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="chat-reports"
+          element={
+            <Suspense fallback={<PageFallback />}>
+              <AdminChatReportsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="chat-reports/:reportId"
+          element={
+            <Suspense fallback={<PageFallback />}>
+              <AdminChatReportDetailPage />
+            </Suspense>
+          }
+        />
+      </Route>
       <Route element={<RequireAuth />}>
         <Route
           element={<MainLayout theme={theme} onThemeChange={setTheme} />}

@@ -685,6 +685,12 @@ export async function markChatRead(conversationId: string): Promise<void> {
   await api.post(`/chat/conversations/${conversationId}/read`);
 }
 
+export async function reportChatConversation(conversationId: string, reason?: string): Promise<void> {
+  await api.post(`/chat/conversations/${conversationId}/report`, {
+    reason: reason?.trim() || undefined,
+  });
+}
+
 // ============= Notifications Types =============
 
 export interface NotificationItem {
