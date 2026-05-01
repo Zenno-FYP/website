@@ -189,7 +189,6 @@ This project includes `vercel.json` with:
 - **Push notifications not working:** check `VITE_FIREBASE_VAPID_KEY`, browser notification permission, and service worker registration.
 - **API 404s on dashboard endpoints:** ensure `VITE_API_BASE_URL` points to backend origin or `/api/v1` base.
 
-## License
+---
 
-This repository currently has no explicit license file. Add a `LICENSE` before open-source distribution if you want to define usage terms.
-  
+Last Updated: 2026-04-23
