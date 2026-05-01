@@ -21,7 +21,8 @@ export interface User {
   profilePhoto?: string | null;
   isVerified: boolean;
   role: string;
-  activity_sync_at: string;
+  /** Last desktop activity sync to backend (ISO). Null/empty if never synced. */
+  activity_sync_at?: string | null;
   createdAt: string;
   updatedAt: string;
   timezone_offset: number;
