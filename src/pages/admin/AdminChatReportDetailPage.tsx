@@ -78,7 +78,7 @@ export function AdminChatReportDetailPage() {
   }
 
   const cardClass = cn(
-    "rounded-2xl border p-6 shadow-sm backdrop-blur-xl transition-all duration-200",
+    "rounded-2xl border p-8 sm:p-10 shadow-sm backdrop-blur-xl transition-all duration-200",
     isDark ? "border-white/10 bg-[#121218]/80" : "border-gray-200/90 bg-white/80"
   );
   

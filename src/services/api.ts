@@ -40,8 +40,6 @@ api.interceptors.request.use(
       }
 
       const token = await firebaseUser.getIdToken();
-      // Uncomment to log token on every API call - helpful for debugging specific requests
-      // console.log('🔐 API Request Token:', token.substring(0, 50) + '...');
       config.headers.Authorization = `Bearer ${token}`;
     } catch (error) {
       console.error('Failed to get Firebase token:', error);

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useOutletContext, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   fetchAdminChatReports,
@@ -24,7 +24,6 @@ import {
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/components/ui/utils";
 import type { SiteTheme } from "@/hooks/useSiteTheme";
-import { useOutletContext } from "react-router-dom";
 import { motion } from "motion/react";
 
 const STATUSES = ["all", "open", "dismissed", "reviewed", "action_taken"] as const;

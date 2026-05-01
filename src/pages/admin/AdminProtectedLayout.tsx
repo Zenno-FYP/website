@@ -178,35 +178,69 @@ export function AdminProtectedLayout() {
                 </Link>
               </Button>
             </div>
-            
-            {/* User Area Footer if needed, but not required based on original */}
           </aside>
 
           {/* Main Content */}
           <div className="flex flex-1 flex-col overflow-hidden">
-            {/* Mobile Header */}
             <header
               className={cn(
-                "flex h-16 shrink-0 items-center justify-between border-b px-4 sm:hidden",
-                isDark ? "border-white/10 bg-[#0f0f14]/90 backdrop-blur-md" : "border-gray-200 bg-white/90 backdrop-blur-md"
+                "flex h-16 shrink-0 items-center justify-between gap-3 border-b px-4 sm:px-8",
+                isDark ? "border-white/10 bg-[#0f0f14]/90 backdrop-blur-md" : "border-gray-200 bg-white/90 backdrop-blur-md",
               )}
             >
-              <Link to="/admin" className="flex items-center gap-2.5">
-                <div className="h-8 w-8 overflow-hidden rounded-lg shadow-sm ring-1 ring-white/15">
+              <Link
+                to="/admin"
+                className={cn(
+                  "flex min-w-0 items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60 sm:gap-3",
+                  isDark ? "focus-visible:ring-offset-[#0f0f14]" : "focus-visible:ring-offset-white",
+                )}
+              >
+                <div className="h-8 w-8 shrink-0 overflow-hidden rounded-lg shadow-sm ring-1 ring-white/15 sm:hidden">
                   <img src={logo} alt="Zenno" className="h-full w-full object-cover" />
                 </div>
-                <span className={cn("text-sm font-bold tracking-tight", isDark ? "text-white" : "text-gray-900")}>
-                  Zenno Admin
-                </span>
+                <div className="min-w-0">
+                  <span className={cn("block truncate text-sm font-bold tracking-tight sm:text-base", isDark ? "text-white" : "text-gray-900")}>
+                    Zenno Admin
+                  </span>
+                  <span className={cn("hidden text-xs font-medium sm:block", isDark ? "text-gray-500" : "text-gray-500")}>
+                    Console
+                  </span>
+                </div>
               </Link>
-              <Button variant="ghost" size="sm" asChild className={cn("h-8 px-2", isDark ? "text-gray-300" : "text-gray-600")}>
-                <Link to="/dashboard">App</Link>
-              </Button>
+              <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                  className={cn(
+                    "h-9 gap-1.5 rounded-lg border px-3 font-medium shadow-sm",
+                    isDark
+                      ? "border-white/15 bg-white/5 text-gray-100 hover:bg-white/10 hover:text-white"
+                      : "border-gray-200 bg-white text-gray-900 hover:bg-gray-50",
+                  )}
+                >
+                  <Link to="/admin/chat-reports" className="inline-flex items-center gap-1.5">
+                    <MessageSquareWarning className="h-4 w-4 shrink-0" strokeWidth={2.25} aria-hidden />
+                    <span className="hidden sm:inline">Chat reports</span>
+                    <span className="sm:hidden">Reports</span>
+                  </Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  asChild
+                  className={cn("h-9 shrink-0 px-3 font-medium", isDark ? "text-gray-300 hover:bg-white/10 hover:text-white" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900")}
+                >
+                  <Link to="/dashboard">
+                    <span className="hidden sm:inline">Back to app</span>
+                    <span className="sm:hidden">App</span>
+                  </Link>
+                </Button>
+              </div>
             </header>
 
-            {/* Scrollable Content */}
             <main className="flex-1 overflow-y-auto">
-              <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+              <div className="mx-auto max-w-7xl px-6 py-10 sm:px-10 sm:py-16 lg:px-12 lg:py-20">
                 <Outlet context={{ theme }} />
               </div>
             </main>

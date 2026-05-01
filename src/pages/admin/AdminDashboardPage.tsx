@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -38,8 +38,158 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { motion } from "motion/react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 type AdminOutletContext = { theme?: SiteTheme };
+
+const CHART_VERIFIED = "#34d399";
+const CHART_UNVERIFIED = "#f59e0b";
+const CHART_BAR_PRIMARY = "#7C4DFF";
+const CHART_BAR_ACCENT = "#22d3ee";
+
+const PIE_HOST_PX = 240;
+const BAR_HOST_PX = 280;
+
+/** Measure chart width; height is fixed in CSS so Recharts always gets a real box (avoid 927×17 collapse). */
+function useChartHostWidth(stats: AdminStats | null) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(0);
+
+  useLayoutEffect(() => {
+    if (!stats) {
+      setWidth(0);
+      return;
+    }
+
+    const el = ref.current;
+    if (!el) {
+      return;
+    }
+
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      const w = Math.max(0, Math.floor(r.width));
+      setWidth((prev) => (prev === w ? prev : w));
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [stats]);
+
+  return { ref, width };
+}
+
+function VerificationMixChart({
+  width,
+  height,
+  stats,
+  isDark,
+}: {
+  width: number;
+  height: number;
+  stats: AdminStats;
+  isDark: boolean;
+}) {
+  const r = Math.min(width, height) / 2 - 8;
+  const outerR = Math.max(28, r * 0.9);
+  const innerR = outerR * 0.56;
+  const cx = width / 2;
+  const cy = height / 2;
+
+  return (
+    <PieChart width={width} height={height} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+      <Pie
+        data={[
+          { name: "Verified", value: stats.verifiedUsers, fill: CHART_VERIFIED },
+          { name: "Unverified", value: stats.unverifiedUsers, fill: CHART_UNVERIFIED },
+        ]}
+        dataKey="value"
+        nameKey="name"
+        cx={cx}
+        cy={cy}
+        innerRadius={innerR}
+        outerRadius={outerR}
+        paddingAngle={2}
+        strokeWidth={0}
+        isAnimationActive={false}
+      />
+      <Tooltip
+        formatter={(value: number, name: string) => [`${value}`, name]}
+        contentStyle={
+          isDark
+            ? { background: "#1a1a24", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "#e5e7eb" }
+            : { background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", color: "#111827" }
+        }
+        labelStyle={{ color: isDark ? "#9ca3af" : "#6b7280" }}
+      />
+    </PieChart>
+  );
+}
+
+function ActivitySnapshotChart({
+  width,
+  height,
+  stats,
+  isDark,
+}: {
+  width: number;
+  height: number;
+  stats: AdminStats;
+  isDark: boolean;
+}) {
+  const data = [
+    { name: "Desktop (1h)", value: stats.usersActiveDesktopLastHour },
+    { name: "Signups (7d)", value: stats.newUsersLast7Days },
+    { name: "Open reports", value: stats.openChatReports },
+  ];
+
+  return (
+    <BarChart width={width} height={height} data={data} margin={{ top: 12, right: 12, left: 4, bottom: 8 }} barCategoryGap="18%">
+      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"} />
+      <XAxis
+        dataKey="name"
+        tick={{ fill: isDark ? "#9ca3af" : "#6b7280", fontSize: 11 }}
+        axisLine={{ stroke: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.12)" }}
+        tickLine={false}
+        interval={0}
+      />
+      <YAxis
+        allowDecimals={false}
+        width={36}
+        tick={{ fill: isDark ? "#9ca3af" : "#6b7280", fontSize: 11 }}
+        axisLine={false}
+        tickLine={false}
+      />
+      <Tooltip
+        formatter={(value: number) => [value, "Count"]}
+        contentStyle={
+          isDark
+            ? { background: "#1a1a24", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "#e5e7eb" }
+            : { background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", color: "#111827" }
+        }
+        labelStyle={{ color: isDark ? "#9ca3af" : "#6b7280" }}
+        cursor={{ fill: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)" }}
+      />
+      <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={56} isAnimationActive={false}>
+        <Cell fill={CHART_BAR_ACCENT} />
+        <Cell fill={CHART_BAR_PRIMARY} />
+        <Cell fill="#fb7185" />
+      </Bar>
+    </BarChart>
+  );
+}
 
 function StatCard({
   label,
@@ -48,7 +198,7 @@ function StatCard({
   footnote,
   href,
   isDark,
-  gradientClass,
+  iconColor,
   glowClass,
 }: {
   label: string;
@@ -57,11 +207,11 @@ function StatCard({
   footnote?: string;
   href?: string;
   isDark: boolean;
-  gradientClass?: string;
+  iconColor?: string;
   glowClass?: string;
 }) {
-  const defaultGradient = "from-[#5B6FD8] to-[#7C4DFF]";
-  const grad = gradientClass || defaultGradient;
+  const defaultColor = "#7C4DFF";
+  const bgColor = iconColor || defaultColor;
   const glow = glowClass || (isDark ? "from-[#5B6FD8]/20 to-[#7C4DFF]/10" : "from-[#5B6FD8]/15 to-[#7C4DFF]/8");
 
   const inner = (
@@ -69,7 +219,7 @@ function StatCard({
       whileHover={{ y: -4, scale: 1.01 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
       className={cn(
-        "group relative overflow-hidden rounded-2xl border p-6 shadow-lg backdrop-blur-xl transition-colors duration-200",
+        "group relative overflow-hidden rounded-2xl border p-8 sm:p-10 shadow-lg backdrop-blur-xl transition-colors duration-200",
         isDark
           ? "border-white/10 bg-gradient-to-br from-[#16161f]/95 to-[#121218]/90 shadow-black/25"
           : "border-gray-200/90 bg-white/75 shadow-gray-400/10",
@@ -93,7 +243,10 @@ function StatCard({
             <p className={cn("mt-2 text-xs leading-relaxed", isDark ? "text-gray-500" : "text-gray-600")}>{footnote}</p>
           ) : null}
         </div>
-        <div className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-md ring-2 ring-white/40", grad)}>
+        <div 
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl shadow-md ring-2 ring-white/40"
+          style={{ backgroundColor: bgColor }}
+        >
           <Icon className="h-5 w-5 text-white" strokeWidth={2.35} aria-hidden />
         </div>
       </div>
@@ -136,6 +289,9 @@ export function AdminDashboardPage() {
   const [verifiedFilter, setVerifiedFilter] = useState<"all" | "true" | "false">("all");
   const [loading, setLoading] = useState(true);
 
+  const pieHost = useChartHostWidth(stats);
+  const barHost = useChartHostWidth(stats);
+
   const loadStats = useCallback(async () => {
     const s = await fetchAdminStats();
     setStats(s);
@@ -171,6 +327,12 @@ export function AdminDashboardPage() {
     isDark ? "border-white/10 bg-[#121218]/75 shadow-xl backdrop-blur-xl" : "border-gray-200/90 bg-white/80 shadow-lg shadow-gray-400/5 backdrop-blur-xl",
   );
 
+  /** Recharts draws slightly outside the SVG box; `overflow-hidden` on the card clips the whole chart. */
+  const chartCardClass = cn(
+    "rounded-2xl border",
+    isDark ? "border-white/10 bg-[#121218]/75 shadow-xl backdrop-blur-xl" : "border-gray-200/90 bg-white/80 shadow-lg shadow-gray-400/5 backdrop-blur-xl",
+  );
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
@@ -193,14 +355,16 @@ export function AdminDashboardPage() {
           <div className="h-10 w-10 animate-spin rounded-full border-2 border-purple-500/40 border-t-purple-500" />
         </div>
       ) : stats ? (
-        <section className="flex flex-col gap-8" aria-label="Key metrics">
+        <div className="flex flex-col" style={{ gap: '32px' }}>
+        <section className="flex flex-col" aria-label="Key metrics">
           <motion.div 
             initial="hidden" animate="visible"
             variants={{
               hidden: { opacity: 0 },
               visible: { opacity: 1, transition: { staggerChildren: 0.05 } }
             }}
-            className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3"
+            className="grid sm:grid-cols-2 xl:grid-cols-4"
+            style={{ gap: '32px' }}
           >
             <StatCard 
               label="Total users" 
@@ -208,8 +372,8 @@ export function AdminDashboardPage() {
               icon={Users} 
               footnote="All registered accounts" 
               isDark={isDark} 
-              gradientClass="from-blue-600 to-indigo-600" 
-              glowClass={isDark ? "from-blue-600/20 to-indigo-600/10" : "from-blue-600/15 to-indigo-600/8"}
+              iconColor="#2563eb" 
+              glowClass={isDark ? "from-blue-600/20 to-blue-600/10" : "from-blue-600/15 to-blue-600/8"}
             />
             <StatCard 
               label="Verified" 
@@ -217,8 +381,8 @@ export function AdminDashboardPage() {
               icon={UserCheck} 
               footnote={`${verifiedPct}% of total`} 
               isDark={isDark} 
-              gradientClass="from-emerald-600 to-teal-600" 
-              glowClass={isDark ? "from-emerald-600/20 to-teal-600/10" : "from-emerald-600/15 to-teal-600/8"}
+              iconColor="#059669" 
+              glowClass={isDark ? "from-emerald-600/20 to-emerald-600/10" : "from-emerald-600/15 to-emerald-600/8"}
             />
             <StatCard 
               label="Unverified" 
@@ -226,8 +390,8 @@ export function AdminDashboardPage() {
               icon={UserX} 
               footnote="Awaiting or incomplete verification" 
               isDark={isDark} 
-              gradientClass="from-orange-500 to-red-600" 
-              glowClass={isDark ? "from-orange-500/20 to-red-600/10" : "from-orange-500/15 to-red-600/8"}
+              iconColor="#f97316" 
+              glowClass={isDark ? "from-orange-500/20 to-orange-500/10" : "from-orange-500/15 to-orange-500/8"}
             />
             <StatCard
               label="Desktop active (last hour)"
@@ -235,18 +399,85 @@ export function AdminDashboardPage() {
               icon={Monitor}
               footnote="Users with recent agent sync"
               isDark={isDark}
-              gradientClass="from-cyan-600 to-blue-600"
-              glowClass={isDark ? "from-cyan-600/20 to-blue-600/10" : "from-cyan-600/15 to-blue-600/8"}
+              iconColor="#0891b2"
+              glowClass={isDark ? "from-cyan-600/20 to-cyan-600/10" : "from-cyan-600/15 to-cyan-600/8"}
             />
+          </motion.div>
+        </section>
+
+        <section className="flex flex-col" aria-label="Charts">
+          {/* Two columns with a wide gutter: signups + verification | reports + activity */}
+          <div className="grid min-w-0 grid-cols-1 lg:grid-cols-2" style={{ gap: '32px' }}>
+            <div className="flex min-w-0 flex-col" style={{ gap: '32px' }}>
             <StatCard 
               label="New signups (7 days)" 
               value={stats.newUsersLast7Days} 
               icon={TrendingUp} 
               footnote="Rolling window" 
               isDark={isDark} 
-              gradientClass="from-purple-600 to-fuchsia-600" 
-              glowClass={isDark ? "from-purple-600/20 to-fuchsia-600/10" : "from-purple-600/15 to-fuchsia-600/8"}
+              iconColor="#9333ea" 
+              glowClass={isDark ? "from-purple-600/20 to-purple-600/10" : "from-purple-600/15 to-purple-600/8"}
             />
+            <Card className={chartCardClass}>
+              <CardHeader className={cn("px-6 pb-2 pt-6", isDark ? "border-b border-white/10" : "border-b border-gray-200/90")}>
+                <CardTitle className={cn("text-base font-semibold tracking-tight", isDark ? "text-white" : "text-gray-900")}>
+                  Verification mix
+                </CardTitle>
+                <CardDescription className={cn("text-sm", isDark ? "text-gray-500" : "text-gray-600")}>
+                  Share of verified vs unverified accounts ({stats.totalUsers} total).
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3 px-4 pb-6 pt-2">
+                {stats.totalUsers > 0 ? (
+                  <>
+                    <div
+                      ref={pieHost.ref}
+                      data-chart-host="verification-pie"
+                      className="relative w-full min-w-0 shrink-0"
+                      style={{ height: PIE_HOST_PX, minHeight: PIE_HOST_PX, boxSizing: "border-box" }}
+                    >
+                      {pieHost.width > 48 ? (
+                        <VerificationMixChart
+                          width={pieHost.width}
+                          height={PIE_HOST_PX}
+                          stats={stats}
+                          isDark={isDark}
+                        />
+                      ) : (
+                        <div
+                          className={cn(
+                            "flex h-full items-center justify-center rounded-lg border border-dashed text-xs",
+                            isDark ? "border-white/15 text-gray-500" : "border-gray-200 text-gray-500",
+                          )}
+                        >
+                          {pieHost.width === 0 ? "Preparing chart…" : `Chart width too small (${pieHost.width}px).`}
+                        </div>
+                      )}
+                    </div>
+                    <div
+                      className={cn(
+                        "flex flex-wrap items-center justify-center gap-x-12 gap-y-4 text-sm mt-2",
+                        isDark ? "text-gray-300" : "text-gray-700",
+                      )}
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: CHART_VERIFIED }} />
+                        Verified ({stats.verifiedUsers})
+                      </span>
+                      <span className="inline-flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: CHART_UNVERIFIED }} />
+                        Unverified ({stats.unverifiedUsers})
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <p className={cn("py-16 text-center text-sm", isDark ? "text-gray-500" : "text-gray-500")}>No users yet.</p>
+                )}
+              </CardContent>
+            </Card>
+            </div>
+
+            <div className="flex min-w-0 flex-col" style={{ gap: '32px' }}>
             <StatCard
               label="Open chat reports"
               value={stats.openChatReports}
@@ -254,11 +485,49 @@ export function AdminDashboardPage() {
               footnote="Needs review"
               href="/admin/chat-reports?status=open"
               isDark={isDark}
-              gradientClass="from-rose-600 to-red-600"
-              glowClass={isDark ? "from-rose-600/20 to-red-600/10" : "from-rose-600/15 to-red-600/8"}
+              iconColor="#e11d48"
+              glowClass={isDark ? "from-rose-600/20 to-rose-600/10" : "from-rose-600/15 to-rose-600/8"}
             />
-          </motion.div>
+            <Card className={chartCardClass}>
+              <CardHeader className={cn("px-6 pb-2 pt-6", isDark ? "border-b border-white/10" : "border-b border-gray-200/90")}>
+                <CardTitle className={cn("text-base font-semibold tracking-tight", isDark ? "text-white" : "text-gray-900")}>
+                  Activity snapshot
+                </CardTitle>
+                <CardDescription className={cn("text-sm", isDark ? "text-gray-500" : "text-gray-600")}>
+                  Desktop presence, recent growth, and open moderation queue.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="px-2 pb-6 pt-2 sm:px-4">
+                <div
+                  ref={barHost.ref}
+                  data-chart-host="activity-bar"
+                  className="relative w-full min-w-0"
+                  style={{ height: BAR_HOST_PX, minHeight: BAR_HOST_PX, boxSizing: "border-box" }}
+                >
+                  {barHost.width > 48 ? (
+                    <ActivitySnapshotChart
+                      width={barHost.width}
+                      height={BAR_HOST_PX}
+                      stats={stats}
+                      isDark={isDark}
+                    />
+                  ) : (
+                    <div
+                      className={cn(
+                        "flex h-full items-center justify-center rounded-lg border border-dashed text-xs",
+                        isDark ? "border-white/15 text-gray-500" : "border-gray-200 text-gray-500",
+                      )}
+                    >
+                      {barHost.width === 0 ? "Preparing chart…" : `Chart width too small (${barHost.width}px).`}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+            </div>
+          </div>
         </section>
+        </div>
       ) : null}
 
       <div className="h-12 sm:h-16 lg:h-24 shrink-0" aria-hidden="true" />
@@ -267,7 +536,7 @@ export function AdminDashboardPage() {
         <Card className={cardClass}>
           <CardHeader
             className={cn(
-              "flex flex-col gap-5 px-6 pb-6 pt-8 sm:flex-row sm:items-end sm:justify-between sm:gap-6",
+              "flex flex-col gap-6 px-8 pb-8 pt-10 sm:flex-row sm:items-end sm:justify-between lg:px-10 lg:pt-12",
               isDark ? "border-b border-white/10" : "border-b border-gray-200/90",
             )}
           >
@@ -280,7 +549,6 @@ export function AdminDashboardPage() {
               </CardDescription>
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-3">
-              <span className={cn("text-sm font-medium", isDark ? "text-gray-400" : "text-gray-600")}>Verified</span>
               <Select
                 value={verifiedFilter}
                 onValueChange={(v) => {
