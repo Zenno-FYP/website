@@ -42,18 +42,8 @@ export function CorePlatform() {
           transition={fadeUp(0.82, 0)}
           className="text-center landing-mb-heading"
         >
-          <h2
-            style={{
-              fontSize: "3rem",
-              fontWeight: 700,
-              color: "#F5F7FA",
-              fontFamily: "Space Grotesk, sans-serif",
-              marginBottom: "1rem",
-            }}
-          >
-            Everything you need to understand how you work
-          </h2>
-          <p style={{ fontSize: "1.125rem", color: "#A7B0BE", maxWidth: "42rem", margin: "0 auto" }}>
+          <h2 className="landing-h2">Everything you need to understand how you work</h2>
+          <p className="landing-lead max-w-2xl mx-auto" style={{ margin: "0 auto" }}>
             Desktop agent, web dashboard, and Zenno Agent—connected the same way as in the product.
           </p>
         </motion.div>
@@ -65,7 +55,7 @@ export function CorePlatform() {
             viewport={landingViewport}
             transition={fadeUp(0.88, 0.06)}
           >
-            <GlassCard className="p-8">
+            <GlassCard className="landing-pad-card">
               <LandingTopLanguagesPreview />
             </GlassCard>
           </motion.div>

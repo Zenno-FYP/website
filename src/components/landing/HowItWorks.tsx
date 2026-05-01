@@ -56,7 +56,7 @@ function HorizontalConnector() {
 function StepCard({ step }: { step: (typeof steps)[0] }) {
   const Icon = step.icon;
   return (
-    <GlassCard className="p-5 sm:p-6 h-full" hover>
+    <GlassCard className="landing-step-card-pad h-full" hover>
       <div
         className="flex flex-col items-center text-center"
         style={{ gap: "0.75rem" }}
@@ -127,15 +127,7 @@ export function HowItWorks() {
           >
             How It Works
           </h2>
-          <p
-            style={{
-              fontSize: "1.125rem",
-              color: "#A7B0BE",
-              maxWidth: "42rem",
-              margin: "0 auto",
-              lineHeight: 1.6,
-            }}
-          >
+          <p className="landing-lead max-w-2xl mx-auto" style={{ margin: "0 auto", lineHeight: 1.6 }}>
             Desktop agent, web dashboard, and Zenno Agent—wired the same way as
             the product you use every day.
           </p>

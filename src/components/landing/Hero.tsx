@@ -60,24 +60,11 @@ export function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={fadeUp(0.88, 0.14)}
           >
-            <h1
-              className="mb-6 tracking-tight"
-              style={{
-                fontSize: '4.5rem',
-                lineHeight: '1.1',
-                fontFamily: 'Space Grotesk, sans-serif',
-                fontWeight: 700,
-                color: '#F5F7FA'
-              }}
-            >
+            <h1 className="landing-h1 mb-6 tracking-tight">
               Clarity for Your Coding Habits. Focus for Your Best Work.
             </h1>
 
-            <p className="mb-8 max-w-lg" style={{
-              fontSize: '1.125rem',
-              lineHeight: '1.7',
-              color: '#A7B0BE'
-            }}>
+            <p className="landing-lead mb-8 max-w-lg">
               Zenno tracks your desktop activity, maps your focus patterns across apps, languages, and projects, then delivers AI nudges that respect your rhythm—helping you code with more awareness and intention.
             </p>
 
@@ -107,19 +94,6 @@ export function Hero() {
                   aria-hidden
                 />
               </button>
-
-              <button
-                className="px-8 py-4 rounded-2xl border transition-all duration-300 hover:border-purple-500/50"
-                style={{
-                  background: 'rgba(91, 111, 216, 0.1)',
-                  border: '1px solid rgba(91, 111, 216, 0.3)',
-                  color: '#F5F7FA',
-                  fontWeight: 600,
-                  fontSize: '1.0625rem'
-                }}
-              >
-                See How It Works
-              </button>
             </div>
 
             <div className="flex flex-wrap gap-6" style={{ color: '#9CA3AF', fontSize: '0.9375rem' }}>
@@ -148,18 +122,13 @@ export function Hero() {
           >
             <div className="relative">
               {/* Main dashboard card */}
-              <GlassCard className="p-6 mb-4">
+              <GlassCard className="landing-pad-card mb-4">
                 <div className="flex justify-between items-start mb-6">
                   <div>
                     <div style={{ color: '#6F7885', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
                       Flow Hours This Week
                     </div>
-                    <div style={{
-                      fontSize: '3rem',
-                      fontWeight: 700,
-                      color: '#F5F7FA',
-                      fontFamily: 'Space Grotesk, sans-serif'
-                    }}>
+                    <div className="landing-hero-stat-xl">
                       {heroFlowWeekTotal.toFixed(1)}h
                     </div>
                   </div>

@@ -32,33 +32,15 @@ export function WhyDifferent() {
           transition={fadeUp(0.82, 0)}
           className="text-center landing-mb-heading"
         >
-          <h2
-            style={{
-              fontSize: "3rem",
-              fontWeight: 700,
-              color: "#F5F7FA",
-              fontFamily: "Space Grotesk, sans-serif",
-              marginBottom: "1rem",
-            }}
-          >
-            Why Zenno feels different
-          </h2>
-          <p
-            style={{
-              fontSize: "1.125rem",
-              color: "#A7B0BE",
-              maxWidth: "44rem",
-              margin: "0 auto",
-              lineHeight: 1.6,
-            }}
-          >
+          <h2 className="landing-h2">Why Zenno feels different</h2>
+          <p className="landing-lead mx-auto" style={{ margin: "0 auto", lineHeight: 1.6, maxWidth: "44rem" }}>
             Built around the desktop agent, developer-grade metrics, and a profile that reflects real work—so you get
             clarity without another generic productivity layer.
           </p>
         </motion.div>
 
         <div className="max-w-4xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <div className="landing-grid-2-md mb-6">
             <div className="text-center pb-4 border-b" style={{ borderColor: "rgba(255, 255, 255, 0.08)" }}>
               <h3
                 style={{
@@ -92,7 +74,7 @@ export function WhyDifferent() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={landingViewport}
               transition={fadeUp(0.75, staggerDelay(index, 0.08))}
-              className="grid md:grid-cols-2 gap-6 py-5 border-b"
+              className="landing-grid-2-md py-5 border-b"
               style={{ borderColor: "rgba(255, 255, 255, 0.05)" }}
             >
               <div className="flex items-start gap-3">

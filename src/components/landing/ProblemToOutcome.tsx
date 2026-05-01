@@ -35,23 +35,13 @@ export function ProblemToOutcome() {
           transition={fadeUp(0.82, 0)}
           className="text-center landing-mb-heading"
         >
-          <h2
-            style={{
-              fontSize: '3rem',
-              fontWeight: 700,
-              color: '#F5F7FA',
-              fontFamily: 'Space Grotesk, sans-serif',
-              marginBottom: '1rem'
-            }}
-          >
-            You code all day but still don't know where your time goes.
-          </h2>
-          <p style={{ fontSize: '1.125rem', color: '#A7B0BE', maxWidth: '42rem', margin: '0 auto' }}>
+          <h2 className="landing-h2">You code all day but still don't know where your time goes.</h2>
+          <p className="landing-lead max-w-2xl" style={{ margin: '0 auto' }}>
             Zenno transforms hidden patterns into clarity.
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="landing-grid-3-6">
           {problems.map((item, index) => (
             <motion.div
               key={item.title}
@@ -60,7 +50,7 @@ export function ProblemToOutcome() {
               viewport={landingViewport}
               transition={fadeUp(0.78, staggerDelay(index, 0.1))}
             >
-              <GlassCard className="p-8 h-full" hover>
+              <GlassCard className="landing-pad-card h-full" hover>
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center mb-6"
                   style={{
