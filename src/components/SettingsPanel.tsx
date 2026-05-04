@@ -79,12 +79,7 @@ export function SettingsPanel({
       setPrefs(updated);
     } catch (err) {
       if (previous) setPrefs(previous);
-      try {
-        const { toast } = await import("sonner");
-        toast.error("Could not save your notification preference.");
-      } catch {
-        // toast import failure is non-fatal; user already sees revert
-      }
+      toast.error("Could not save your notification preference.");
       console.error("[SettingsPanel] Failed to update notification pref:", err);
     }
   };

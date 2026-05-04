@@ -90,7 +90,6 @@ export function DashboardPage({ theme }: DashboardPageProps) {
       {/* Right Sidebar */}
       <div className="lg:col-span-4 space-y-6">
         <ZennoAgentCard
-          theme={theme}
           onSettingsClick={() => navigate("/zenno-agent")}
         />
         <StrongestSkillsCard

@@ -714,7 +714,7 @@ export interface NotificationPreferences {
 
 export async function registerFcmDevice(
   token: string,
-  platform: 'web' | 'android',
+  platform: 'web' | 'android' | 'ios',
   deviceLabel: string,
 ): Promise<void> {
   await api.post('/notifications/devices', { token, platform, device_label: deviceLabel });

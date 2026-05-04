@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { ArrowRight, FolderOpen } from "lucide-react";
-import { useFirebaseUser, useUser } from "@/stores/useAuthHooks";
+import { useFirebaseUser } from "@/stores/useAuthHooks";
 import { fetchProjectInsights, ProjectDetail } from "@/services/api";
 import { getRelativeTime, getActivityStatus } from "@/utils/timeFormatter";
 
@@ -28,8 +28,6 @@ interface RecentProjectsCardProps {
 export function RecentProjectsCard({ theme, onViewClick }: RecentProjectsCardProps) {
   const navigate = useNavigate();
   const firebaseUser = useFirebaseUser();
-  const user = useUser();
-  const timezoneOffset = user?.timezone_offset ?? 0;
   const [projects, setProjects] = useState<ProjectDetail[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,8 +118,8 @@ export function RecentProjectsCard({ theme, onViewClick }: RecentProjectsCardPro
             projects.map((project, index) => {
               const colorPair = PROJECT_LABEL_COLORS[index % PROJECT_LABEL_COLORS.length];
               const projectId = `P${index + 1}`;
-              const activityStatus = getActivityStatus(project.last_active, timezoneOffset);
-              const relativeTime = getRelativeTime(project.last_active, timezoneOffset);
+              const activityStatus = getActivityStatus(project.last_active);
+              const relativeTime = getRelativeTime(project.last_active);
 
               return (
                 <div

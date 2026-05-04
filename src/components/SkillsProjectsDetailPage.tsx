@@ -55,7 +55,7 @@ function projectDisplayTitle(project: { name: string; display_name: string | nul
 
 function lastActiveRelative(iso: string | null): string {
   if (!iso) return "No activity yet";
-  const rel = getRelativeTime(iso, 0);
+  const rel = getRelativeTime(iso);
   return rel === "unknown" ? "Unknown" : rel;
 }
 
