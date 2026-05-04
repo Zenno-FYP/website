@@ -1,10 +1,8 @@
 /**
- * Converts a local timestamp to a relative time string
- * @param dateString - Local timezone timestamp (can be ISO 8601 with T or space-separated)
- * @param _timezoneOffset - User's timezone offset in hours (not used since data is already in local time)
- * @returns Relative time string (e.g., "45 mins ago", "2 days ago")
+ * Converts a local timestamp to a relative time string.
+ * Dates are interpreted in the user's local timezone (browser).
  */
-export function getRelativeTime(dateString: string, _timezoneOffset: number): string {
+export function getRelativeTime(dateString: string): string {
   // Convert space-separated format (2026-03-05 00:57:48) to ISO format with T
   // This handles both formats: "2026-03-05T00:57:48" and "2026-03-05 00:57:48"
   const normalizedString = dateString.includes('T') ? dateString : dateString.replace(' ', 'T');
@@ -53,12 +51,9 @@ export function getRelativeTime(dateString: string, _timezoneOffset: number): st
 }
 
 /**
- * Gets the activity status color and emoji based on last active time
- * @param dateString - Local timezone timestamp (can be ISO 8601 with T or space-separated)
- * @param _timezoneOffset - User's timezone offset in hours (not used since data is already in local time)
- * @returns Object with color classes and emoji
+ * Activity status styling from last-active timestamp (local timezone).
  */
-export function getActivityStatus(dateString: string, _timezoneOffset: number): {
+export function getActivityStatus(dateString: string): {
   color: string;
   emoji: string;
   category: 'fresh' | 'recent' | 'stale';

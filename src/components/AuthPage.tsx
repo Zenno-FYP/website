@@ -25,11 +25,10 @@ import logo from "@/assets/logo.png";
 type AuthStep = "signin" | "signup" | "verify-email" | "forgot-password";
 
 interface AuthPageProps {
-  theme: 'light' | 'dark';
-  onLogin?: () => void;
+  theme: "light" | "dark";
 }
 
-export function AuthPage({ theme, onLogin }: AuthPageProps) {
+export function AuthPage({ theme }: AuthPageProps) {
   const setFirebaseUser = useSetFirebaseUser();
   const setUser = useSetUser();
   const setLoading = useSetLoading();
@@ -87,16 +86,11 @@ export function AuthPage({ theme, onLogin }: AuthPageProps) {
   const createUserProfile = async (firebaseUser: typeof auth.currentUser) => {
     if (!firebaseUser?.email) return;
 
-    try {
-      // Call PUT /api/v1/user/me to create user profile
-      await userService.createProfile({
-        email: firebaseUser.email,
-        name: firebaseUser.displayName || "User",
-        profilePhoto: profilePhoto || undefined,
-      });
-    } catch (error: any) {
-      throw error;
-    }
+    await userService.createProfile({
+      email: firebaseUser.email,
+      name: firebaseUser.displayName || "User",
+      profilePhoto: profilePhoto || undefined,
+    });
   };
 
   // Handle OAuth login (Google/GitHub) - creates or syncs user profile
@@ -126,11 +120,6 @@ export function AuthPage({ theme, onLogin }: AuthPageProps) {
       setAuthError(null);
 
       toast.success(`Welcome back, ${user.name}! 🎉`);
-
-      // Call the onLogin callback if provided
-      if (onLogin) {
-        onLogin();
-      }
     } catch (error: any) {
       const message = error.response?.data?.message || getFirebaseErrorMessage(error);
       setAuthError(message);
@@ -291,7 +280,6 @@ export function AuthPage({ theme, onLogin }: AuthPageProps) {
           setUser(user);
           setAuthenticated(true);
           setAuthError(null);
-          if (onLogin) onLogin();
         } catch (profileError: any) {
           const message = profileError.message || "Failed to load profile";
           setAuthError(message);

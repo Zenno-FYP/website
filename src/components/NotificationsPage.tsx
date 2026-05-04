@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { NotificationListSkeleton } from "@/components/skeletons/DashboardSkeleton";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { toast } from "sonner";
 
 function notifIcon(type: string) {
   switch (type) {
@@ -71,13 +72,25 @@ export function NotificationsPage() {
   }, [load]);
 
   const handleMarkRead = async (id: string) => {
-    await markNotificationRead(id);
-    setItems((prev) => prev.map((n) => (n._id === id ? { ...n, read_at: new Date().toISOString() } : n)));
+    try {
+      await markNotificationRead(id);
+      setItems((prev) =>
+        prev.map((n) => (n._id === id ? { ...n, read_at: new Date().toISOString() } : n)),
+      );
+    } catch {
+      toast.error("Could not update notification.");
+    }
   };
 
   const handleMarkAllRead = async () => {
-    await markAllNotificationsRead();
-    setItems((prev) => prev.map((n) => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })));
+    try {
+      await markAllNotificationsRead();
+      setItems((prev) =>
+        prev.map((n) => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })),
+      );
+    } catch {
+      toast.error("Could not mark all as read.");
+    }
   };
 
   const handleClick = (n: NotificationItem) => {

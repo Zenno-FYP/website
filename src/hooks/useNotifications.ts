@@ -37,24 +37,37 @@ export function useNotifications() {
 
   const markRead = useCallback(
     async (id: string) => {
-      await markNotificationRead(id);
-      setItems((prev) =>
-        prev.map((n) =>
-          n._id === id ? { ...n, read_at: new Date().toISOString() } : n,
-        ),
-      );
-      setUnreadCount((c) => Math.max(0, c - 1));
+      try {
+        await markNotificationRead(id);
+        setItems((prev) =>
+          prev.map((n) =>
+            n._id === id ? { ...n, read_at: new Date().toISOString() } : n,
+          ),
+        );
+        setUnreadCount((c) => Math.max(0, c - 1));
+      } catch {
+        toast.error("Could not mark notification as read.");
+        void refresh();
+      }
     },
-    [],
+    [refresh],
   );
 
   const markAllRead = useCallback(async () => {
-    await markAllNotificationsRead();
-    setItems((prev) =>
-      prev.map((n) => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })),
-    );
-    setUnreadCount(0);
-  }, []);
+    try {
+      await markAllNotificationsRead();
+      setItems((prev) =>
+        prev.map((n) => ({
+          ...n,
+          read_at: n.read_at ?? new Date().toISOString(),
+        })),
+      );
+      setUnreadCount(0);
+    } catch {
+      toast.error("Could not mark all as read.");
+      void refresh();
+    }
+  }, [refresh]);
 
   useEffect(() => {
     void refresh();

@@ -17,11 +17,10 @@ const tones = [
 ];
 
 interface ZennoAgentCardProps {
-  theme: "light" | "dark";
   onSettingsClick?: () => void;
 }
 
-export function ZennoAgentCard({ theme: _theme, onSettingsClick }: ZennoAgentCardProps) {
+export function ZennoAgentCard({ onSettingsClick }: ZennoAgentCardProps) {
   const [prefs, setPrefs] = useState<AgentPreferences | null>(null);
   const [stats, setStats] = useState<AgentNudgeStats | null>(null);
   const [loading, setLoading] = useState(true);
